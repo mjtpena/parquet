@@ -20,6 +20,11 @@ public interface IStorageService
     Task<bool> DeleteFileAsync(Guid fileId);
     Task<long> GetStorageUsageAsync();
     Task CleanupOldFilesAsync(TimeSpan retention);
+    
+    // Additional methods for new services
+    Task<FileMetadata> GetFileMetadataAsync(Guid fileId);
+    Task StoreFileMetadataAsync(FileMetadata metadata);
+    Task<List<FileMetadata>> GetAllFilesAsync();
 }
 
 public interface IQueryEngine

@@ -133,3 +133,103 @@ public class DataQualityIssue
     public long AffectedRows { get; set; }
     public string Recommendation { get; set; } = string.Empty;
 }
+
+// Delta Lake Models
+public class DeltaTableMetadata : FileMetadata
+{
+    public long Version { get; set; } = 0;
+    public string MinReaderVersion { get; set; } = "1";
+    public string MinWriterVersion { get; set; } = "2";
+    public List<DeltaAction> Actions { get; set; } = new();
+    public DeltaProtocol Protocol { get; set; } = new();
+    public Dictionary<string, string> Configuration { get; set; } = new();
+    public List<DeltaCommitInfo> CommitHistory { get; set; } = new();
+    public string SchemaString { get; set; } = string.Empty;
+    public List<string> PartitionColumns { get; set; } = new();
+}
+
+public class DeltaProtocol
+{
+    public int MinReaderVersion { get; set; } = 1;
+    public int MinWriterVersion { get; set; } = 2;
+    public List<string> ReaderFeatures { get; set; } = new();
+    public List<string> WriterFeatures { get; set; } = new();
+}
+
+public class DeltaAction
+{
+    public string Action { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, object> Data { get; set; } = new();
+}
+
+public class DeltaCommitInfo
+{
+    public long Version { get; set; }
+    public DateTime Timestamp { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string Operation { get; set; } = string.Empty;
+    public Dictionary<string, object> OperationParameters { get; set; } = new();
+    public Dictionary<string, object> OperationMetrics { get; set; } = new();
+    public string ClientVersion { get; set; } = string.Empty;
+    public long ReadVersion { get; set; } = -1;
+    public string IsolationLevel { get; set; } = "Serializable";
+    public bool IsBlindAppend { get; set; } = false;
+}
+
+public class DeltaFileAction
+{
+    public string Path { get; set; } = string.Empty;
+    public Dictionary<string, string> PartitionValues { get; set; } = new();
+    public long Size { get; set; }
+    public long ModificationTime { get; set; }
+    public bool DataChange { get; set; } = true;
+    public Dictionary<string, object> Stats { get; set; } = new();
+    public Dictionary<string, string> Tags { get; set; } = new();
+}
+
+public class DeltaTimeTravel
+{
+    public long? Version { get; set; }
+    public DateTime? Timestamp { get; set; }
+    public string? TimestampString { get; set; }
+}
+
+public class SchemaField
+{
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public bool Nullable { get; set; } = true;
+    public Dictionary<string, object> Metadata { get; set; } = new();
+    public List<SchemaField> Fields { get; set; } = new(); // For nested structures
+}
+
+public class TableSchema
+{
+    public string Type { get; set; } = "struct";
+    public List<SchemaField> Fields { get; set; } = new();
+}
+
+public class QueryExecutionPlan
+{
+    public string QueryId { get; set; } = Guid.NewGuid().ToString();
+    public string SqlQuery { get; set; } = string.Empty;
+    public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+    public long ExecutionTimeMs { get; set; }
+    public long RowsRead { get; set; }
+    public long BytesScanned { get; set; }
+    public List<ExecutionNode> Nodes { get; set; } = new();
+    public Dictionary<string, object> Statistics { get; set; } = new();
+    public List<string> Optimizations { get; set; } = new();
+}
+
+public class ExecutionNode
+{
+    public string NodeType { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double Cost { get; set; }
+    public long Rows { get; set; }
+    public Dictionary<string, object> Properties { get; set; } = new();
+    public List<ExecutionNode> Children { get; set; } = new();
+}
