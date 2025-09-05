@@ -1,30 +1,482 @@
 @page "/viewer"
 @page "/viewer/{FileId:guid}"
+@inject IFileProcessor FileProcessor
+@inject IStorageService StorageService
+@inject ApplicationState AppState
+@inject ILogger<DataViewer> Logger
 
 <PageTitle>Data Viewer - Parquet & Delta Lake Tool</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge">
-    <MudGrid>
-        <MudItem xs="12">
-            <MudPaper Class="pa-6" Elevation="2">
-                <MudStack AlignItems="AlignItems.Center" Spacing="4">
-                    <MudIcon Icon="Icons.Material.Filled.Construction" Size="Size.Large" Color="Color.Warning" />
-                    <MudText Typo="Typo.h5" Align="Align.Center">Data Viewer Coming Soon</MudText>
-                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                        Advanced data grid with filtering and virtual scrolling will be available soon.
-                    </MudText>
-                    <MudButton StartIcon="Icons.Material.Filled.Home" 
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4">
+    <MudStack Spacing="4">
+        <!-- Header Section -->
+        <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Spacing="2">
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.GridView" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.h4" Class="font-semibold">Data Viewer</MudText>
+                    </MudStack>
+                    @if (_currentFile != null)
+                    {
+                        <MudStack Row Spacing="4" AlignItems="AlignItems.Center">
+                            <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@GetFileIcon(_currentFile.Format)" Size="Size.Small" />
+                                <MudText Typo="Typo.body1" Class="font-mono">@_currentFile.FileName</MudText>
+                            </MudStack>
+                            <MudChip Icon="Icons.Material.Filled.TableRows" Size="Size.Small" Color="Color.Info">
+                                @FormatNumber(_currentFile.RowCount) rows
+                            </MudChip>
+                            <MudChip Icon="Icons.Material.Filled.Storage" Size="Size.Small" Color="Color.Secondary">
+                                @FormatFileSize(_currentFile.FileSize)
+                            </MudChip>
+                            <MudChip Size="Size.Small" Color="@GetFormatColor(_currentFile.Format)">
+                                @_currentFile.Format
+                            </MudChip>
+                        </MudStack>
+                    }
+                </MudStack>
+                
+                <MudStack Row Spacing="2">
+                    @if (_currentFile != null && _preview != null)
+                    {
+                        <MudButton StartIcon="Icons.Material.Filled.Refresh" 
+                                  Variant="Variant.Outlined" 
+                                  OnClick="RefreshData"
+                                  Disabled="_isLoading">
+                            Refresh
+                        </MudButton>
+                        <MudButton StartIcon="Icons.Material.Filled.FileDownload" 
+                                  Variant="Variant.Outlined" 
+                                  OnClick="ExportData"
+                                  Disabled="_isLoading">
+                            Export
+                        </MudButton>
+                    }
+                    <MudButton StartIcon="Icons.Material.Filled.FolderOpen" 
                               Variant="Variant.Filled" 
                               Color="Color.Primary"
-                              Href="/">
-                        Return to Home
+                              OnClick="ShowFileSelector">
+                        Select File
                     </MudButton>
                 </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        @if (_isLoading)
+        {
+            <MudPaper Class="pa-8" Elevation="1" Style="border-radius: 12px;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Loading data...</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Processing @(_currentFile?.Format.ToString() ?? "file") data
+                    </MudText>
+                </MudStack>
             </MudPaper>
-        </MudItem>
-    </MudGrid>
+        }
+        else if (_errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="rounded-lg">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Failed to load data</MudText>
+                    <MudText>@_errorMessage</MudText>
+                    <MudButton StartIcon="Icons.Material.Filled.Refresh" 
+                              Variant="Variant.Outlined" 
+                              OnClick="RefreshData"
+                              Size="Size.Small">
+                        Try Again
+                    </MudButton>
+                </MudStack>
+            </MudAlert>
+        }
+        else if (_preview != null)
+        {
+            <!-- Data Table Section -->
+            <MudPaper Class="pa-0" Elevation="2" Style="border-radius: 12px; overflow: hidden;">
+                <MudStack Spacing="0">
+                    <!-- Table Controls -->
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="pa-4 border-b">
+                        <MudStack Row Spacing="4" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.h6" Class="font-semibold">
+                                Showing @_preview.ReturnedRows of @FormatNumber(_preview.TotalRows) rows
+                            </MudText>
+                            @if (_preview.TotalRows > _rowsPerPage)
+                            {
+                                <MudSelect @bind-Value="_rowsPerPage" 
+                                          Label="Rows per page" 
+                                          Variant="Variant.Outlined" 
+                                          Margin="Margin.Dense"
+                                          Style="min-width: 120px;">
+                                    <MudSelectItem Value="25">25</MudSelectItem>
+                                    <MudSelectItem Value="50">50</MudSelectItem>
+                                    <MudSelectItem Value="100">100</MudSelectItem>
+                                    <MudSelectItem Value="500">500</MudSelectItem>
+                                </MudSelect>
+                            }
+                        </MudStack>
+                        
+                        <MudStack Row Spacing="2">
+                            <MudTextField @bind-Value="_searchText" 
+                                         Placeholder="Search data..." 
+                                         Variant="Variant.Outlined" 
+                                         Margin="Margin.Dense"
+                                         Immediate="true"
+                                         Clearable="true"
+                                         OnClearButtonClick="ClearSearch"
+                                         Adornment="Adornment.Start" 
+                                         AdornmentIcon="Icons.Material.Filled.Search" />
+                            @if (_preview.TotalRows > _rowsPerPage)
+                            {
+                                <MudPagination Count="@_totalPages" 
+                                              Selected="_currentPage" 
+                                              SelectedChanged="OnPageChanged"
+                                              Variant="Variant.Outlined" 
+                                              Color="Color.Primary" />
+                            }
+                        </MudStack>
+                    </MudStack>
+                    
+                    <!-- Data Table -->
+                    <div style="overflow-x: auto; max-height: 70vh;">
+                        <MudTable Items="@_filteredRows" 
+                                 Hover="true" 
+                                 Striped="true" 
+                                 Dense="true" 
+                                 Elevation="0"
+                                 Class="mud-table-dense">
+                            <HeaderContent>
+                                @foreach (var field in _preview.Schema?.Fields ?? new List<Field>())
+                                {
+                                    <MudTh Style="font-weight: 600; white-space: nowrap; background: var(--mud-palette-surface);">
+                                        <MudStack Spacing="1">
+                                            <MudText Class="font-semibold">@field.Name</MudText>
+                                            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); font-family: monospace;">
+                                                @field.DataType
+                                            </MudText>
+                                        </MudStack>
+                                    </MudTh>
+                                }
+                            </HeaderContent>
+                            <RowTemplate>
+                                @foreach (var field in _preview.Schema?.Fields ?? new List<Field>())
+                                {
+                                    <MudTd Style="font-family: monospace; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                                           title="@(context.TryGetValue(field.Name, out var val) ? val?.ToString() : "")">
+                                        @{
+                                            var value = context.TryGetValue(field.Name, out var v) ? v : null;
+                                            var displayValue = FormatCellValue(value, field.DataType);
+                                        }
+                                        @if (value == null)
+                                        {
+                                            <MudText Style="color: var(--mud-palette-text-disabled); font-style: italic;">null</MudText>
+                                        }
+                                        else
+                                        {
+                                            <span style="@GetCellStyle(field.DataType)">@displayValue</span>
+                                        }
+                                    </MudTd>
+                                }
+                            </RowTemplate>
+                        </MudTable>
+                    </div>
+                </MudStack>
+            </MudPaper>
+        }
+        else if (FileId == null)
+        {
+            <!-- No File Selected -->
+            <MudPaper Class="pa-8" Elevation="1" Style="border-radius: 12px;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudIcon Icon="Icons.Material.Filled.FolderOpen" Size="Size.Large" Color="Color.Primary" />
+                    <MudText Typo="Typo.h5">Select a file to view data</MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                        Choose from your recent files or upload a new one to start exploring your data.
+                    </MudText>
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.FolderOpen" 
+                                  Variant="Variant.Filled" 
+                                  Color="Color.Primary"
+                                  OnClick="ShowFileSelector">
+                            Browse Files
+                        </MudButton>
+                        <MudButton StartIcon="Icons.Material.Filled.Upload" 
+                                  Variant="Variant.Outlined" 
+                                  Href="/">
+                            Upload File
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
 </MudContainer>
+
+<!-- File Selector Dialog -->
+<MudDialog @bind-IsVisible="_showFileSelector" Options="new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true }">
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="Icons.Material.Filled.FolderOpen" />
+            <MudText Typo="Typo.h6">Select File</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        @if (_isLoadingFiles)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                <MudProgressCircular Indeterminate="true" />
+                <MudText>Loading files...</MudText>
+            </MudStack>
+        }
+        else if (_availableFiles.Any())
+        {
+            <MudList Clickable="true">
+                @foreach (var file in _availableFiles)
+                {
+                    <MudListItem OnClick="@(() => SelectFile(file))" Class="rounded-lg ma-1">
+                        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@GetFileIcon(file.Format)" />
+                                <MudStack Spacing="1">
+                                    <MudText Class="font-semibold">@file.FileName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @file.Format • @FormatFileSize(file.FileSize) • @FormatNumber(file.RowCount) rows
+                                    </MudText>
+                                </MudStack>
+                            </MudStack>
+                            <MudText Typo="Typo.caption" Class="font-mono">
+                                @file.ModifiedAt.ToString("MMM dd, yyyy")
+                            </MudText>
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+        else
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                <MudIcon Icon="Icons.Material.Filled.FolderOff" Size="Size.Large" Color="Color.Secondary" />
+                <MudText>No files available</MudText>
+                <MudButton Href="/" Variant="Variant.Outlined">Upload a file</MudButton>
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showFileSelector = false)">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     [Parameter] public Guid? FileId { get; set; }
+    
+    private FileMetadata? _currentFile;
+    private DataPreview? _preview;
+    private List<FileMetadata> _availableFiles = new();
+    private List<Dictionary<string, object?>> _filteredRows = new();
+    
+    private bool _isLoading = false;
+    private bool _isLoadingFiles = false;
+    private bool _showFileSelector = false;
+    private string? _errorMessage;
+    private string _searchText = string.Empty;
+    
+    private int _currentPage = 1;
+    private int _rowsPerPage = 100;
+    private int _totalPages => _preview != null ? (int)Math.Ceiling((double)_preview.TotalRows / _rowsPerPage) : 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (FileId.HasValue)
+        {
+            await LoadFileData(FileId.Value);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (FileId.HasValue && (_currentFile == null || _currentFile.FileId != FileId.Value))
+        {
+            await LoadFileData(FileId.Value);
+        }
+    }
+
+    private async Task LoadFileData(Guid fileId)
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _currentFile = await StorageService.GetMetadataAsync(fileId);
+            if (_currentFile == null)
+            {
+                _errorMessage = "File not found";
+                return;
+            }
+
+            await LoadPreviewData();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogError(ex, "Failed to load file data for {FileId}", fileId);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadPreviewData()
+    {
+        if (_currentFile == null) return;
+
+        try
+        {
+            var offset = (_currentPage - 1) * _rowsPerPage;
+            _preview = await FileProcessor.GetPreviewAsync(_currentFile.FileId, _rowsPerPage, offset);
+            ApplySearch();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load preview: {ex.Message}";
+            Logger.LogError(ex, "Failed to load preview for {FileId}", _currentFile.FileId);
+        }
+    }
+
+    private void ApplySearch()
+    {
+        if (_preview?.Rows == null) return;
+
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            _filteredRows = _preview.Rows.ToList();
+        }
+        else
+        {
+            var searchLower = _searchText.ToLowerInvariant();
+            _filteredRows = _preview.Rows.Where(row =>
+                row.Values.Any(value => 
+                    value?.ToString()?.ToLowerInvariant().Contains(searchLower) == true)
+            ).ToList();
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadPreviewData();
+    }
+
+    private async Task RefreshData()
+    {
+        if (_currentFile != null)
+        {
+            await LoadPreviewData();
+        }
+    }
+
+    private async Task ShowFileSelector()
+    {
+        _isLoadingFiles = true;
+        _showFileSelector = true;
+        StateHasChanged();
+
+        try
+        {
+            _availableFiles = await StorageService.GetRecentFilesAsync(50);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load available files");
+        }
+        finally
+        {
+            _isLoadingFiles = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectFile(FileMetadata file)
+    {
+        _showFileSelector = false;
+        await LoadFileData(file.FileId);
+    }
+
+    private void ClearSearch()
+    {
+        _searchText = string.Empty;
+        ApplySearch();
+    }
+
+    private async Task ExportData()
+    {
+        // TODO: Implement data export functionality
+        await Task.Delay(1);
+    }
+
+    private string GetFileIcon(FileFormat format) => format switch
+    {
+        FileFormat.Parquet => Icons.Material.Filled.TableChart,
+        FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+        FileFormat.CSV => Icons.Material.Filled.GridOn,
+        FileFormat.JSON => Icons.Material.Filled.DataObject,
+        _ => Icons.Material.Filled.InsertDriveFile
+    };
+
+    private Color GetFormatColor(FileFormat format) => format switch
+    {
+        FileFormat.Parquet => Color.Primary,
+        FileFormat.Delta => Color.Success,
+        FileFormat.CSV => Color.Info,
+        FileFormat.JSON => Color.Warning,
+        _ => Color.Default
+    };
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+        int counter = 0;
+        double number = bytes;
+        
+        while (Math.Round(number / 1024) >= 1)
+        {
+            number = number / 1024;
+            counter++;
+        }
+        
+        return $"{number:n1} {suffixes[counter]}";
+    }
+
+    private string FormatNumber(long number)
+    {
+        return number.ToString("N0");
+    }
+
+    private string FormatCellValue(object? value, string dataType)
+    {
+        if (value == null) return "";
+        
+        return dataType.ToLower() switch
+        {
+            "double" or "float" => ((double)value).ToString("N2"),
+            "int64" or "int32" or "integer" => ((long)value).ToString("N0"),
+            "datetime" or "timestamp" => value.ToString() ?? "",
+            "boolean" => value.ToString()?.ToLower() ?? "",
+            _ => value.ToString() ?? ""
+        };
+    }
+
+    private string GetCellStyle(string dataType)
+    {
+        return dataType.ToLower() switch
+        {
+            "double" or "float" or "int64" or "int32" or "integer" => "text-align: right;",
+            "boolean" => "color: var(--mud-palette-info);",
+            "datetime" or "timestamp" => "color: var(--mud-palette-tertiary);",
+            _ => ""
+        };
+    }
 }

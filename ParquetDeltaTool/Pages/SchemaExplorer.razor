@@ -1,30 +1,719 @@
 @page "/schema"
 @page "/schema/{FileId:guid}"
+@inject IFileProcessor FileProcessor
+@inject IStorageService StorageService
+@inject ApplicationState AppState
+@inject ILogger<SchemaExplorer> Logger
+@using ParquetDeltaTool.Models
 
 <PageTitle>Schema Explorer - Parquet & Delta Lake Tool</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge">
-    <MudGrid>
-        <MudItem xs="12">
-            <MudPaper Class="pa-6" Elevation="2">
-                <MudStack AlignItems="AlignItems.Center" Spacing="4">
-                    <MudIcon Icon="Icons.Material.Filled.Construction" Size="Size.Large" Color="Color.Warning" />
-                    <MudText Typo="Typo.h5" Align="Align.Center">Schema Explorer Coming Soon</MudText>
-                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                        Interactive schema tree view and detailed field information will be available soon.
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4">
+    <MudStack Spacing="4">
+        <!-- Header Section -->
+        <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Spacing="2">
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.AccountTree" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.h4" Class="font-semibold">Schema Explorer</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Explore your data structure with detailed field information and metadata
                     </MudText>
-                    <MudButton StartIcon="Icons.Material.Filled.Home" 
+                    @if (_currentFile != null)
+                    {
+                        <MudStack Row Spacing="4" AlignItems="AlignItems.Center" Class="mt-2">
+                            <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@GetFileIcon(_currentFile.Format)" Size="Size.Small" />
+                                <MudText Typo="Typo.body1" Class="font-mono">@_currentFile.FileName</MudText>
+                            </MudStack>
+                            <MudChip Icon="Icons.Material.Filled.TableRows" Size="Size.Small" Color="Color.Info">
+                                @FormatNumber(_currentFile.RowCount) rows
+                            </MudChip>
+                            <MudChip Size="Size.Small" Color="@GetFormatColor(_currentFile.Format)">
+                                @_currentFile.Format
+                            </MudChip>
+                        </MudStack>
+                    }
+                </MudStack>
+                
+                <MudStack Row Spacing="2">
+                    @if (_schema != null)
+                    {
+                        <MudButton StartIcon="Icons.Material.Filled.Code" 
+                                  Variant="Variant.Outlined" 
+                                  OnClick="GenerateCreateTableSQL">
+                            Generate DDL
+                        </MudButton>
+                        <MudButton StartIcon="Icons.Material.Filled.FileDownload" 
+                                  Variant="Variant.Outlined" 
+                                  OnClick="ExportSchema">
+                            Export JSON
+                        </MudButton>
+                    }
+                    <MudButton StartIcon="Icons.Material.Filled.FolderOpen" 
                               Variant="Variant.Filled" 
                               Color="Color.Primary"
-                              Href="/">
-                        Return to Home
+                              OnClick="ShowFileSelector">
+                        Select File
                     </MudButton>
                 </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        @if (_isLoading)
+        {
+            <MudPaper Class="pa-8" Elevation="1" Style="border-radius: 12px;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Loading schema...</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Analyzing @(_currentFile?.Format.ToString() ?? "file") structure
+                    </MudText>
+                </MudStack>
             </MudPaper>
-        </MudItem>
-    </MudGrid>
+        }
+        else if (_errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="rounded-lg">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Failed to load schema</MudText>
+                    <MudText>@_errorMessage</MudText>
+                    <MudButton StartIcon="Icons.Material.Filled.Refresh" 
+                              Variant="Variant.Outlined" 
+                              OnClick="RefreshSchema"
+                              Size="Size.Small">
+                        Try Again
+                    </MudButton>
+                </MudStack>
+            </MudAlert>
+        }
+        else if (_schema != null)
+        {
+            <MudGrid>
+                <!-- Schema Overview -->
+                <MudItem xs="12" md="8">
+                    <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+                        <MudStack Spacing="4">
+                            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h5" Class="font-semibold">Schema Structure</MudText>
+                                <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudChip Icon="Icons.Material.Filled.ViewColumn" Size="Size.Small" Color="Color.Info">
+                                        @_schema.Fields.Count fields
+                                    </MudChip>
+                                    <MudTextField @bind-Value="_searchText" 
+                                                 Placeholder="Search fields..." 
+                                                 Variant="Variant.Outlined" 
+                                                 Margin="Margin.Dense"
+                                                 Style="width: 200px;"
+                                                 Clearable="true"
+                                                 Immediate="true"
+                                                 Adornment="Adornment.Start" 
+                                                 AdornmentIcon="Icons.Material.Filled.Search" />
+                                </MudStack>
+                            </MudStack>
+
+                            <!-- Fields Table -->
+                            <div style="overflow-x: auto;">
+                                <MudTable Items="@_filteredFields" 
+                                         Hover="true" 
+                                         Striped="true" 
+                                         Dense="false" 
+                                         Elevation="0"
+                                         Class="schema-table">
+                                    <HeaderContent>
+                                        <MudTh Style="font-weight: 600; min-width: 200px;">
+                                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="Icons.Material.Filled.Label" Size="Size.Small" />
+                                                <MudText>Field Name</MudText>
+                                            </MudStack>
+                                        </MudTh>
+                                        <MudTh Style="font-weight: 600; min-width: 120px;">
+                                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="Icons.Material.Filled.DataType" Size="Size.Small" />
+                                                <MudText>Data Type</MudText>
+                                            </MudStack>
+                                        </MudTh>
+                                        <MudTh Style="font-weight: 600; width: 100px; text-align: center;">
+                                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="Icons.Material.Filled.CheckCircleOutline" Size="Size.Small" />
+                                                <MudText>Nullable</MudText>
+                                            </MudStack>
+                                        </MudTh>
+                                        <MudTh Style="font-weight: 600; min-width: 150px;">
+                                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="Icons.Material.Filled.DefaultValue" Size="Size.Small" />
+                                                <MudText>Default Value</MudText>
+                                            </MudStack>
+                                        </MudTh>
+                                        <MudTh Style="font-weight: 600; min-width: 200px;">
+                                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="Icons.Material.Filled.Info" Size="Size.Small" />
+                                                <MudText>Metadata</MudText>
+                                            </MudStack>
+                                        </MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd>
+                                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudIcon Icon="@GetFieldIcon(context.DataType)" 
+                                                        Size="Size.Small" 
+                                                        Color="@GetDataTypeColor(context.DataType)" />
+                                                <MudText Class="font-mono font-semibold" 
+                                                        Style="@GetFieldNameStyle(context.IsNullable)">
+                                                    @context.Name
+                                                </MudText>
+                                            </MudStack>
+                                        </MudTd>
+                                        <MudTd>
+                                            <MudChip Size="Size.Small" 
+                                                    Color="@GetDataTypeColor(context.DataType)"
+                                                    Class="font-mono">
+                                                @context.DataType
+                                            </MudChip>
+                                        </MudTd>
+                                        <MudTd Style="text-align: center;">
+                                            @if (context.IsNullable)
+                                            {
+                                                <MudIcon Icon="Icons.Material.Filled.CheckCircle" 
+                                                        Color="Color.Success" 
+                                                        Size="Size.Small"
+                                                        title="Nullable" />
+                                            }
+                                            else
+                                            {
+                                                <MudIcon Icon="Icons.Material.Filled.Cancel" 
+                                                        Color="Color.Error" 
+                                                        Size="Size.Small"
+                                                        title="Not Null" />
+                                            }
+                                        </MudTd>
+                                        <MudTd>
+                                            @if (context.DefaultValue != null)
+                                            {
+                                                <MudText Class="font-mono" 
+                                                        Style="color: var(--mud-palette-info);">
+                                                    @context.DefaultValue.ToString()
+                                                </MudText>
+                                            }
+                                            else
+                                            {
+                                                <MudText Style="color: var(--mud-palette-text-disabled); font-style: italic;">
+                                                    none
+                                                </MudText>
+                                            }
+                                        </MudTd>
+                                        <MudTd>
+                                            @if (context.Metadata.Any())
+                                            {
+                                                <MudStack Spacing="1">
+                                                    @foreach (var meta in context.Metadata.Take(2))
+                                                    {
+                                                        <MudChip Size="Size.Small" 
+                                                                Variant="Variant.Text" 
+                                                                Color="Color.Secondary">
+                                                            @meta.Key: @meta.Value
+                                                        </MudChip>
+                                                    }
+                                                    @if (context.Metadata.Count > 2)
+                                                    {
+                                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                            +@(context.Metadata.Count - 2) more
+                                                        </MudText>
+                                                    }
+                                                </MudStack>
+                                            }
+                                            else
+                                            {
+                                                <MudText Style="color: var(--mud-palette-text-disabled); font-style: italic;">
+                                                    none
+                                                </MudText>
+                                            }
+                                        </MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                            </div>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- Schema Statistics -->
+                <MudItem xs="12" md="4">
+                    <MudStack Spacing="3">
+                        <!-- Field Type Summary -->
+                        <MudPaper Class="pa-4" Elevation="1" Style="border-radius: 12px;">
+                            <MudStack Spacing="3">
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="Icons.Material.Filled.PieChart" Color="Color.Primary" />
+                                    <MudText Typo="Typo.h6" Class="font-semibold">Field Types</MudText>
+                                </MudStack>
+                                
+                                @foreach (var typeGroup in _typeStatistics)
+                                {
+                                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                            <MudIcon Icon="@GetFieldIcon(typeGroup.Key)" 
+                                                    Color="@GetDataTypeColor(typeGroup.Key)" 
+                                                    Size="Size.Small" />
+                                            <MudText Class="font-mono">@typeGroup.Key</MudText>
+                                        </MudStack>
+                                        <MudChip Size="Size.Small" Color="@GetDataTypeColor(typeGroup.Key)">
+                                            @typeGroup.Value
+                                        </MudChip>
+                                    </MudStack>
+                                }
+                            </MudStack>
+                        </MudPaper>
+
+                        <!-- Schema Metadata -->
+                        @if (_schema.Metadata.Any())
+                        {
+                            <MudPaper Class="pa-4" Elevation="1" Style="border-radius: 12px;">
+                                <MudStack Spacing="3">
+                                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudIcon Icon="Icons.Material.Filled.Info" Color="Color.Info" />
+                                        <MudText Typo="Typo.h6" Class="font-semibold">Schema Metadata</MudText>
+                                    </MudStack>
+                                    
+                                    @foreach (var meta in _schema.Metadata)
+                                    {
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.body2" Class="font-semibold">@meta.Key</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-mono" 
+                                                    Style="color: var(--mud-palette-text-secondary); background: var(--mud-palette-surface); padding: 0.25rem 0.5rem; border-radius: 4px;">
+                                                @meta.Value
+                                            </MudText>
+                                        </MudStack>
+                                    }
+                                </MudStack>
+                            </MudPaper>
+                        }
+
+                        <!-- Schema Summary -->
+                        <MudPaper Class="pa-4" Elevation="1" Style="border-radius: 12px;">
+                            <MudStack Spacing="3">
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="Icons.Material.Filled.Summarize" Color="Color.Success" />
+                                    <MudText Typo="Typo.h6" Class="font-semibold">Summary</MudText>
+                                </MudStack>
+                                
+                                <MudGrid>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Total Fields</MudText>
+                                            <MudText Typo="Typo.h6" Class="font-mono">@_schema.Fields.Count</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Nullable Fields</MudText>
+                                            <MudText Typo="Typo.h6" Class="font-mono">@_schema.Fields.Count(f => f.IsNullable)</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Required Fields</MudText>
+                                            <MudText Typo="Typo.h6" Class="font-mono">@_schema.Fields.Count(f => !f.IsNullable)</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Data Types</MudText>
+                                            <MudText Typo="Typo.h6" Class="font-mono">@_typeStatistics.Count</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudStack>
+                        </MudPaper>
+
+                        <!-- Quick Actions -->
+                        <MudPaper Class="pa-4" Elevation="1" Style="border-radius: 12px;">
+                            <MudStack Spacing="3">
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="Icons.Material.Filled.Bolt" Color="Color.Warning" />
+                                    <MudText Typo="Typo.h6" Class="font-semibold">Quick Actions</MudText>
+                                </MudStack>
+                                
+                                <MudStack Spacing="2">
+                                    <MudButton StartIcon="Icons.Material.Filled.GridView" 
+                                              Variant="Variant.Outlined" 
+                                              FullWidth="true"
+                                              Href="@($"/viewer/{_currentFile?.FileId}")"
+                                              Class="justify-start">
+                                        View Data
+                                    </MudButton>
+                                    <MudButton StartIcon="Icons.Material.Filled.Code" 
+                                              Variant="Variant.Outlined" 
+                                              FullWidth="true"
+                                              Href="@($"/query/{_currentFile?.FileId}")"
+                                              Class="justify-start">
+                                        Query Data
+                                    </MudButton>
+                                    <MudButton StartIcon="Icons.Material.Filled.Analytics" 
+                                              Variant="Variant.Outlined" 
+                                              FullWidth="true"
+                                              Href="@($"/statistics/{_currentFile?.FileId}")"
+                                              Class="justify-start">
+                                        View Statistics
+                                    </MudButton>
+                                </MudStack>
+                            </MudStack>
+                        </MudPaper>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        }
+        else if (FileId == null)
+        {
+            <!-- No File Selected -->
+            <MudPaper Class="pa-8" Elevation="1" Style="border-radius: 12px;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudIcon Icon="Icons.Material.Filled.AccountTree" Size="Size.Large" Color="Color.Primary" />
+                    <MudText Typo="Typo.h5">Select a file to explore schema</MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                        Choose from your recent files to analyze the data structure and field definitions.
+                    </MudText>
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.FolderOpen" 
+                                  Variant="Variant.Filled" 
+                                  Color="Color.Primary"
+                                  OnClick="ShowFileSelector">
+                            Browse Files
+                        </MudButton>
+                        <MudButton StartIcon="Icons.Material.Filled.Upload" 
+                                  Variant="Variant.Outlined" 
+                                  Href="/">
+                            Upload File
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
 </MudContainer>
+
+<!-- File Selector Dialog -->
+<MudDialog @bind-IsVisible="_showFileSelector" Options="new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true }">
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="Icons.Material.Filled.FolderOpen" />
+            <MudText Typo="Typo.h6">Select File for Schema Analysis</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        @if (_isLoadingFiles)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                <MudProgressCircular Indeterminate="true" />
+                <MudText>Loading files...</MudText>
+            </MudStack>
+        }
+        else if (_availableFiles.Any())
+        {
+            <MudList Clickable="true">
+                @foreach (var file in _availableFiles)
+                {
+                    <MudListItem OnClick="@(() => SelectFile(file))" Class="rounded-lg ma-1">
+                        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@GetFileIcon(file.Format)" />
+                                <MudStack Spacing="1">
+                                    <MudText Class="font-semibold">@file.FileName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @file.Format • @FormatFileSize(file.FileSize) • @FormatNumber(file.RowCount) rows
+                                    </MudText>
+                                </MudStack>
+                            </MudStack>
+                            <MudText Typo="Typo.caption" Class="font-mono">
+                                @file.ModifiedAt.ToString("MMM dd, yyyy")
+                            </MudText>
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+        else
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                <MudIcon Icon="Icons.Material.Filled.FolderOff" Size="Size.Large" Color="Color.Secondary" />
+                <MudText>No files available</MudText>
+                <MudButton Href="/" Variant="Variant.Outlined">Upload a file</MudButton>
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showFileSelector = false)">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<!-- DDL Dialog -->
+<MudDialog @bind-IsVisible="_showDDLDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true }">
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="Icons.Material.Filled.Code" />
+            <MudText Typo="Typo.h6">Generated CREATE TABLE Statement</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudPaper Class="pa-4" Elevation="0" Style="background: var(--mud-palette-surface);">
+            <MudTextField @bind-Value="_generatedDDL"
+                         Variant="Variant.Outlined"
+                         Lines="15"
+                         ReadOnly="true"
+                         Style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 13px;"
+                         FullWidth="true" />
+        </MudPaper>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="Icons.Material.Filled.ContentCopy" 
+                  OnClick="CopyDDLToClipboard"
+                  Variant="Variant.Outlined">
+            Copy to Clipboard
+        </MudButton>
+        <MudButton OnClick="@(() => _showDDLDialog = false)">Close</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     [Parameter] public Guid? FileId { get; set; }
+    
+    private FileMetadata? _currentFile;
+    private Schema? _schema;
+    private List<FileMetadata> _availableFiles = new();
+    private List<Field> _filteredFields = new();
+    private Dictionary<string, int> _typeStatistics = new();
+    
+    private bool _isLoading = false;
+    private bool _isLoadingFiles = false;
+    private bool _showFileSelector = false;
+    private bool _showDDLDialog = false;
+    private string? _errorMessage;
+    private string _searchText = string.Empty;
+    private string _generatedDDL = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (FileId.HasValue)
+        {
+            await LoadFileSchema(FileId.Value);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (FileId.HasValue && (_currentFile == null || _currentFile.FileId != FileId.Value))
+        {
+            await LoadFileSchema(FileId.Value);
+        }
+    }
+
+    private async Task LoadFileSchema(Guid fileId)
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _currentFile = await StorageService.GetMetadataAsync(fileId);
+            if (_currentFile == null)
+            {
+                _errorMessage = "File not found";
+                return;
+            }
+
+            _schema = await FileProcessor.GetSchemaAsync(fileId);
+            ComputeStatistics();
+            ApplySearch();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogError(ex, "Failed to load schema for {FileId}", fileId);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ComputeStatistics()
+    {
+        if (_schema == null) return;
+
+        _typeStatistics = _schema.Fields
+            .GroupBy(f => f.DataType)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private void ApplySearch()
+    {
+        if (_schema?.Fields == null) return;
+
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            _filteredFields = _schema.Fields.ToList();
+        }
+        else
+        {
+            var searchLower = _searchText.ToLowerInvariant();
+            _filteredFields = _schema.Fields.Where(field =>
+                field.Name.ToLowerInvariant().Contains(searchLower) ||
+                field.DataType.ToLowerInvariant().Contains(searchLower)
+            ).ToList();
+        }
+    }
+
+    private async Task RefreshSchema()
+    {
+        if (_currentFile != null)
+        {
+            await LoadFileSchema(_currentFile.FileId);
+        }
+    }
+
+    private async Task ShowFileSelector()
+    {
+        _isLoadingFiles = true;
+        _showFileSelector = true;
+        StateHasChanged();
+
+        try
+        {
+            _availableFiles = await StorageService.GetRecentFilesAsync(50);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load available files");
+        }
+        finally
+        {
+            _isLoadingFiles = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectFile(FileMetadata file)
+    {
+        _showFileSelector = false;
+        await LoadFileSchema(file.FileId);
+    }
+
+    private void GenerateCreateTableSQL()
+    {
+        if (_schema == null || _currentFile == null) return;
+
+        var tableName = _currentFile.FileName.Replace(".", "_").Replace("-", "_");
+        var sql = new System.Text.StringBuilder();
+        
+        sql.AppendLine($"CREATE TABLE {tableName} (");
+        
+        var fieldDefinitions = new List<string>();
+        foreach (var field in _schema.Fields)
+        {
+            var sqlType = MapToSQLType(field.DataType);
+            var nullable = field.IsNullable ? "" : " NOT NULL";
+            fieldDefinitions.Add($"    {field.Name} {sqlType}{nullable}");
+        }
+        
+        sql.AppendLine(string.Join(",\n", fieldDefinitions));
+        sql.Append(");");
+        
+        _generatedDDL = sql.ToString();
+        _showDDLDialog = true;
+    }
+
+    private string MapToSQLType(string dataType) => dataType.ToLower() switch
+    {
+        "string" => "VARCHAR(255)",
+        "int32" or "integer" => "INTEGER",
+        "int64" => "BIGINT",
+        "double" or "float" => "DOUBLE",
+        "boolean" => "BOOLEAN",
+        "datetime" or "timestamp" => "TIMESTAMP",
+        "date" => "DATE",
+        _ => "VARCHAR(255)"
+    };
+
+    private async Task CopyDDLToClipboard()
+    {
+        // TODO: Implement clipboard API
+        await Task.Delay(1);
+    }
+
+    private async Task ExportSchema()
+    {
+        // TODO: Implement schema JSON export
+        await Task.Delay(1);
+    }
+
+    // Helper methods
+    private string GetFileIcon(FileFormat format) => format switch
+    {
+        FileFormat.Parquet => Icons.Material.Filled.TableChart,
+        FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+        FileFormat.CSV => Icons.Material.Filled.GridOn,
+        FileFormat.JSON => Icons.Material.Filled.DataObject,
+        _ => Icons.Material.Filled.InsertDriveFile
+    };
+
+    private Color GetFormatColor(FileFormat format) => format switch
+    {
+        FileFormat.Parquet => Color.Primary,
+        FileFormat.Delta => Color.Success,
+        FileFormat.CSV => Color.Info,
+        FileFormat.JSON => Color.Warning,
+        _ => Color.Default
+    };
+
+    private string GetFieldIcon(string dataType) => dataType.ToLower() switch
+    {
+        "string" => Icons.Material.Filled.TextFields,
+        "int32" or "int64" or "integer" => Icons.Material.Filled.Numbers,
+        "double" or "float" => Icons.Material.Filled.Numbers,
+        "boolean" => Icons.Material.Filled.ToggleOn,
+        "datetime" or "timestamp" => Icons.Material.Filled.Schedule,
+        "date" => Icons.Material.Filled.CalendarToday,
+        "array" => Icons.Material.Filled.ViewList,
+        "object" => Icons.Material.Filled.DataObject,
+        _ => Icons.Material.Filled.TextFields
+    };
+
+    private Color GetDataTypeColor(string dataType) => dataType.ToLower() switch
+    {
+        "string" => Color.Primary,
+        "int32" or "int64" or "integer" => Color.Success,
+        "double" or "float" => Color.Info,
+        "boolean" => Color.Warning,
+        "datetime" or "timestamp" or "date" => Color.Tertiary,
+        "array" => Color.Secondary,
+        "object" => Color.Dark,
+        _ => Color.Default
+    };
+
+    private string GetFieldNameStyle(bool isNullable)
+    {
+        return isNullable 
+            ? "color: var(--mud-palette-text-primary);" 
+            : "color: var(--mud-palette-text-primary); font-weight: 600;";
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+        int counter = 0;
+        double number = bytes;
+        
+        while (Math.Round(number / 1024) >= 1)
+        {
+            number = number / 1024;
+            counter++;
+        }
+        
+        return $"{number:n1} {suffixes[counter]}";
+    }
+
+    private string FormatNumber(long number) => number.ToString("N0");
 }

@@ -1,30 +1,711 @@
 @page "/query"
 @page "/query/{FileId:guid}"
+@inject IQueryEngine QueryEngineService
+@inject IStorageService StorageService
+@inject ApplicationState AppState
+@inject ILogger<Pages.QueryEngine> Logger
+@using ParquetDeltaTool.Models
 
 <PageTitle>Query Engine - Parquet & Delta Lake Tool</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge">
-    <MudGrid>
-        <MudItem xs="12">
-            <MudPaper Class="pa-6" Elevation="2">
-                <MudStack AlignItems="AlignItems.Center" Spacing="4">
-                    <MudIcon Icon="Icons.Material.Filled.Construction" Size="Size.Large" Color="Color.Warning" />
-                    <MudText Typo="Typo.h5" Align="Align.Center">SQL Query Engine Coming Soon</MudText>
-                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                        Advanced SQL editor with syntax highlighting and query execution will be available soon.
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4">
+    <MudStack Spacing="4">
+        <!-- Header Section -->
+        <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Spacing="2">
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.Code" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.h4" Class="font-semibold">SQL Query Engine</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Execute SQL queries on your data files with our WebAssembly-powered engine
                     </MudText>
-                    <MudButton StartIcon="Icons.Material.Filled.Home" 
-                              Variant="Variant.Filled" 
-                              Color="Color.Primary"
-                              Href="/">
-                        Return to Home
+                </MudStack>
+                
+                <MudStack Row Spacing="2">
+                    <MudButton StartIcon="Icons.Material.Filled.History" 
+                              Variant="Variant.Outlined" 
+                              OnClick="ShowQueryHistory"
+                              Disabled="_isExecuting">
+                        Query History
+                    </MudButton>
+                    <MudButton StartIcon="Icons.Material.Filled.FolderOpen" 
+                              Variant="Variant.Outlined" 
+                              OnClick="ShowFileSelector">
+                        Select File
                     </MudButton>
                 </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        <MudGrid>
+            <!-- Query Editor Section -->
+            <MudItem xs="12" lg="8">
+                <MudPaper Class="pa-0" Elevation="2" Style="border-radius: 12px; overflow: hidden;">
+                    <MudStack Spacing="0">
+                        <!-- Editor Header -->
+                        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="pa-4 border-b">
+                            <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6" Class="font-semibold">SQL Editor</MudText>
+                                @if (_currentFile != null)
+                                {
+                                    <MudChip Icon="@GetFileIcon(_currentFile.Format)" Size="Size.Small" Color="@GetFormatColor(_currentFile.Format)">
+                                        @_currentFile.FileName
+                                    </MudChip>
+                                }
+                            </MudStack>
+                            
+                            <MudStack Row Spacing="2">
+                                <MudButton StartIcon="Icons.Material.Filled.Clear" 
+                                          Variant="Variant.Text" 
+                                          OnClick="ClearQuery"
+                                          Size="Size.Small"
+                                          Disabled="_isExecuting">
+                                    Clear
+                                </MudButton>
+                                <MudButton StartIcon="Icons.Material.Filled.PlayArrow" 
+                                          Variant="Variant.Filled" 
+                                          Color="Color.Primary"
+                                          OnClick="ExecuteQuery"
+                                          Disabled="_isExecuting || string.IsNullOrWhiteSpace(_queryText)">
+                                    @if (_isExecuting)
+                                    {
+                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                        <span>Executing...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Execute Query</span>
+                                    }
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                        
+                        <!-- SQL Editor -->
+                        <div Class="pa-4">
+                            <MudTextField @bind-Value="_queryText"
+                                         Placeholder="SELECT * FROM your_table LIMIT 100"
+                                         Variant="Variant.Outlined"
+                                         Lines="12"
+                                         Style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;"
+                                         HelperText="@(_validationResult?.IsValid == false ? string.Join(", ", _validationResult.Errors) : "Tip: Start with SELECT to query your data")"
+                                         HelperTextOnFocus="true"
+                                         Error="@(_validationResult?.IsValid == false)"
+                                         OnKeyUp="ValidateQueryDebounced"
+                                         Disabled="_isExecuting" />
+                        </div>
+
+                        <!-- Query Templates -->
+                        @if (!_showTemplates)
+                        {
+                            <div Class="pa-4 border-t">
+                                <MudButton StartIcon="Icons.Material.Filled.Code" 
+                                          Variant="Variant.Text" 
+                                          OnClick="@(() => _showTemplates = !_showTemplates)">
+                                    Show Query Templates
+                                </MudButton>
+                            </div>
+                        }
+                        else
+                        {
+                            <div Class="pa-4 border-t">
+                                <MudStack Spacing="3">
+                                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.h6">Query Templates</MudText>
+                                        <MudButton StartIcon="Icons.Material.Filled.ExpandLess" 
+                                                  Variant="Variant.Text" 
+                                                  OnClick="@(() => _showTemplates = false)">
+                                            Hide
+                                        </MudButton>
+                                    </MudStack>
+                                    
+                                    <MudGrid>
+                                        @foreach (var template in _queryTemplates)
+                                        {
+                                            <MudItem xs="12" sm="6" md="4">
+                                                <MudPaper Class="pa-3 cursor-pointer hover-shadow" 
+                                                         Elevation="1" 
+                                                         Style="border-radius: 8px;"
+                                                         @onclick="@(() => UseTemplate(template))">
+                                                    <MudStack Spacing="2">
+                                                        <MudText Typo="Typo.subtitle2" Class="font-semibold">@template.Name</MudText>
+                                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@template.Description</MudText>
+                                                        <MudText Typo="Typo.caption" Class="font-mono" Style="color: var(--mud-palette-info);">
+                                                            @(template.Query.Length > 50 ? template.Query[..50] + "..." : template.Query)
+                                                        </MudText>
+                                                    </MudStack>
+                                                </MudPaper>
+                                            </MudItem>
+                                        }
+                                    </MudGrid>
+                                </MudStack>
+                            </div>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Sidebar -->
+            <MudItem xs="12" lg="4">
+                <MudStack Spacing="3">
+                    <!-- Execution Status -->
+                    @if (_lastResult != null)
+                    {
+                        <MudPaper Class="pa-4" Elevation="1" Style="border-radius: 12px;">
+                            <MudStack Spacing="3">
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="Icons.Material.Filled.Analytics" Color="Color.Success" />
+                                    <MudText Typo="Typo.h6" Class="font-semibold">Last Execution</MudText>
+                                </MudStack>
+                                
+                                <MudGrid>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Execution Time</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-mono font-semibold">@_lastResult.ExecutionTime.TotalMilliseconds.ToString("N0")ms</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Rows Returned</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-mono font-semibold">@_lastResult.ReturnedRows.ToString("N0")</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Total Rows</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-mono font-semibold">@_lastResult.TotalRows.ToString("N0")</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Bytes Scanned</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-mono font-semibold">@FormatBytes(_lastResult.BytesScanned)</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                </MudGrid>
+                                
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    Executed at @_lastResult.ExecutedAt.ToString("HH:mm:ss")
+                                </MudText>
+                            </MudStack>
+                        </MudPaper>
+                    }
+
+                    <!-- Quick Actions -->
+                    <MudPaper Class="pa-4" Elevation="1" Style="border-radius: 12px;">
+                        <MudStack Spacing="3">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="Icons.Material.Filled.Bolt" Color="Color.Info" />
+                                <MudText Typo="Typo.h6" Class="font-semibold">Quick Actions</MudText>
+                            </MudStack>
+                            
+                            <MudStack Spacing="2">
+                                <MudButton StartIcon="Icons.Material.Filled.GridView" 
+                                          Variant="Variant.Outlined" 
+                                          FullWidth="true"
+                                          Href="/viewer"
+                                          Class="justify-start">
+                                    Data Viewer
+                                </MudButton>
+                                <MudButton StartIcon="Icons.Material.Filled.AccountTree" 
+                                          Variant="Variant.Outlined" 
+                                          FullWidth="true"
+                                          Href="/schema"
+                                          Class="justify-start">
+                                    Schema Explorer
+                                </MudButton>
+                                <MudButton StartIcon="Icons.Material.Filled.Analytics" 
+                                          Variant="Variant.Outlined" 
+                                          FullWidth="true"
+                                          Href="/statistics"
+                                          Class="justify-start">
+                                    Statistics
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </MudPaper>
+
+                    <!-- Query Limits Info -->
+                    <MudAlert Severity="Severity.Info" Class="rounded-lg">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.subtitle2">Query Limits</MudText>
+                            <MudText Typo="Typo.caption">• Maximum 1000 rows returned</MudText>
+                            <MudText Typo="Typo.caption">• 30 second timeout</MudText>
+                            <MudText Typo="Typo.caption">• Only SELECT statements allowed</MudText>
+                        </MudStack>
+                    </MudAlert>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Query Results Section -->
+        @if (_lastResult != null && _lastResult.Rows.Any())
+        {
+            <MudPaper Class="pa-0" Elevation="2" Style="border-radius: 12px; overflow: hidden;">
+                <MudStack Spacing="0">
+                    <!-- Results Header -->
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="pa-4 border-b">
+                        <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.TableChart" Color="Color.Success" />
+                            <MudText Typo="Typo.h6" Class="font-semibold">Query Results</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Success">
+                                @_lastResult.ReturnedRows of @_lastResult.TotalRows rows
+                            </MudChip>
+                        </MudStack>
+                        
+                        <MudStack Row Spacing="2">
+                            <MudButton StartIcon="Icons.Material.Filled.FileDownload" 
+                                      Variant="Variant.Outlined" 
+                                      Size="Size.Small"
+                                      OnClick="ExportResults">
+                                Export CSV
+                            </MudButton>
+                        </MudStack>
+                    </MudStack>
+                    
+                    <!-- Results Table -->
+                    <div style="overflow-x: auto; max-height: 60vh;">
+                        <MudTable Items="@_lastResult.Rows" 
+                                 Hover="true" 
+                                 Striped="true" 
+                                 Dense="true" 
+                                 Elevation="0"
+                                 Class="mud-table-dense">
+                            <HeaderContent>
+                                @foreach (var column in _lastResult.Columns)
+                                {
+                                    <MudTh Style="font-weight: 600; white-space: nowrap; background: var(--mud-palette-surface);">
+                                        <MudStack Spacing="1">
+                                            <MudText Class="font-semibold">@column.Name</MudText>
+                                            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); font-family: monospace;">
+                                                @column.DataType
+                                            </MudText>
+                                        </MudStack>
+                                    </MudTh>
+                                }
+                            </HeaderContent>
+                            <RowTemplate>
+                                @foreach (var column in _lastResult.Columns)
+                                {
+                                    <MudTd Style="font-family: monospace; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                                           title="@(context.TryGetValue(column.Name, out var val) ? val?.ToString() : "")">
+                                        @{
+                                            var value = context.TryGetValue(column.Name, out var v) ? v : null;
+                                            var displayValue = FormatCellValue(value, column.DataType);
+                                        }
+                                        @if (value == null)
+                                        {
+                                            <MudText Style="color: var(--mud-palette-text-disabled); font-style: italic;">null</MudText>
+                                        }
+                                        else
+                                        {
+                                            <span style="@GetCellStyle(column.DataType)">@displayValue</span>
+                                        }
+                                    </MudTd>
+                                }
+                            </RowTemplate>
+                        </MudTable>
+                    </div>
+                </MudStack>
             </MudPaper>
-        </MudItem>
-    </MudGrid>
+        }
+        else if (_lastResult != null && !_lastResult.Rows.Any())
+        {
+            <MudAlert Severity="Severity.Info" Class="rounded-lg">
+                Query executed successfully but returned no results.
+            </MudAlert>
+        }
+        else if (!_hasExecutedQuery && string.IsNullOrWhiteSpace(_queryText))
+        {
+            <!-- Getting Started -->
+            <MudPaper Class="pa-8" Elevation="1" Style="border-radius: 12px;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudIcon Icon="Icons.Material.Filled.PlayArrow" Size="Size.Large" Color="Color.Primary" />
+                    <MudText Typo="Typo.h5">Ready to query your data</MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                        Write a SQL query in the editor above and click "Execute Query" to get started.
+                    </MudText>
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.Code" 
+                                  Variant="Variant.Outlined" 
+                                  OnClick="@(() => _showTemplates = true)">
+                            View Templates
+                        </MudButton>
+                        <MudButton StartIcon="Icons.Material.Filled.FolderOpen" 
+                                  Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  OnClick="ShowFileSelector">
+                            Select Data File
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
 </MudContainer>
+
+<!-- File Selector Dialog -->
+<MudDialog @bind-IsVisible="_showFileSelector" Options="new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true }">
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="Icons.Material.Filled.FolderOpen" />
+            <MudText Typo="Typo.h6">Select File for Query</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        @if (_isLoadingFiles)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                <MudProgressCircular Indeterminate="true" />
+                <MudText>Loading files...</MudText>
+            </MudStack>
+        }
+        else if (_availableFiles.Any())
+        {
+            <MudList Clickable="true">
+                @foreach (var file in _availableFiles)
+                {
+                    <MudListItem OnClick="@(() => SelectFile(file))" Class="rounded-lg ma-1">
+                        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@GetFileIcon(file.Format)" />
+                                <MudStack Spacing="1">
+                                    <MudText Class="font-semibold">@file.FileName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @file.Format • @FormatFileSize(file.FileSize) • @FormatNumber(file.RowCount) rows
+                                    </MudText>
+                                </MudStack>
+                            </MudStack>
+                            <MudText Typo="Typo.caption" Class="font-mono">
+                                @file.ModifiedAt.ToString("MMM dd, yyyy")
+                            </MudText>
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+        else
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                <MudIcon Icon="Icons.Material.Filled.FolderOff" Size="Size.Large" Color="Color.Secondary" />
+                <MudText>No files available</MudText>
+                <MudButton Href="/" Variant="Variant.Outlined">Upload a file</MudButton>
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showFileSelector = false)">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<!-- Query History Dialog -->
+<MudDialog @bind-IsVisible="_showHistoryDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true }">
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="Icons.Material.Filled.History" />
+            <MudText Typo="Typo.h6">Query History</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        @if (_queryHistory.Any())
+        {
+            <MudList Clickable="true">
+                @foreach (var query in _queryHistory)
+                {
+                    <MudListItem OnClick="@(() => UseHistoryQuery(query))" Class="rounded-lg ma-1">
+                        <MudStack Spacing="2">
+                            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Class="font-mono" Style="max-width: 400px; overflow: hidden; text-overflow: ellipsis;">
+                                    @(query.QueryText.Length > 80 ? query.QueryText[..80] + "..." : query.QueryText)
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @query.ExecutedAt.ToString("MMM dd, HH:mm")
+                                </MudText>
+                            </MudStack>
+                            <MudStack Row Spacing="4">
+                                <MudText Typo="Typo.caption">@query.ExecutionTime.TotalMilliseconds.ToString("N0")ms</MudText>
+                                <MudText Typo="Typo.caption">@query.ReturnedRows rows</MudText>
+                                <MudText Typo="Typo.caption">@FormatBytes(query.BytesScanned)</MudText>
+                            </MudStack>
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+        else
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                <MudIcon Icon="Icons.Material.Filled.HistoryToggleOff" Size="Size.Large" Color="Color.Secondary" />
+                <MudText>No query history yet</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Execute some queries to see them here</MudText>
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showHistoryDialog = false)">Close</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     [Parameter] public Guid? FileId { get; set; }
+    
+    private FileMetadata? _currentFile;
+    private List<FileMetadata> _availableFiles = new();
+    private List<QueryResult> _queryHistory = new();
+    
+    private string _queryText = string.Empty;
+    private QueryResult? _lastResult;
+    private ValidationResult? _validationResult;
+    private bool _isExecuting = false;
+    private bool _isLoadingFiles = false;
+    private bool _showFileSelector = false;
+    private bool _showHistoryDialog = false;
+    private bool _showTemplates = false;
+    private bool _hasExecutedQuery = false;
+    
+    private System.Threading.Timer? _validationTimer;
+
+    private List<QueryTemplate> _queryTemplates = new()
+    {
+        new("Basic Select", "SELECT * FROM table_name LIMIT 100", "View all columns from a table"),
+        new("Count Records", "SELECT COUNT(*) FROM table_name", "Count total number of records"),
+        new("Group By Example", "SELECT column_name, COUNT(*) FROM table_name GROUP BY column_name", "Group records by column"),
+        new("Top 10 Records", "SELECT * FROM table_name ORDER BY column_name DESC LIMIT 10", "Get top 10 records"),
+        new("Filter Data", "SELECT * FROM table_name WHERE column_name = 'value'", "Filter records by condition"),
+        new("Date Range", "SELECT * FROM table_name WHERE date_column >= '2023-01-01'", "Filter by date range"),
+        new("Aggregate Stats", "SELECT MIN(col), MAX(col), AVG(col) FROM table_name", "Get basic statistics"),
+        new("Distinct Values", "SELECT DISTINCT column_name FROM table_name", "Get unique values"),
+        new("Join Tables", "SELECT * FROM table1 t1 JOIN table2 t2 ON t1.id = t2.table1_id", "Join multiple tables")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (FileId.HasValue)
+        {
+            await LoadFile(FileId.Value);
+        }
+        
+        await LoadQueryHistory();
+    }
+
+    private async Task LoadFile(Guid fileId)
+    {
+        try
+        {
+            _currentFile = await StorageService.GetMetadataAsync(fileId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load file {FileId}", fileId);
+        }
+    }
+
+    private async Task LoadQueryHistory()
+    {
+        try
+        {
+            _queryHistory = await QueryEngineService.GetQueryHistoryAsync(count: 20);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load query history");
+        }
+    }
+
+    private async Task ExecuteQuery()
+    {
+        if (string.IsNullOrWhiteSpace(_queryText) || _isExecuting) return;
+
+        _isExecuting = true;
+        _lastResult = null;
+        StateHasChanged();
+
+        try
+        {
+            var options = new QueryOptions
+            {
+                FileId = _currentFile?.FileId,
+                MaxRows = 1000,
+                TimeoutSeconds = 30
+            };
+
+            _lastResult = await QueryEngineService.ExecuteQueryAsync(_queryText, options);
+            _hasExecutedQuery = true;
+            
+            // Refresh history
+            await LoadQueryHistory();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Query execution failed");
+            // TODO: Show error snackbar
+        }
+        finally
+        {
+            _isExecuting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowFileSelector()
+    {
+        _isLoadingFiles = true;
+        _showFileSelector = true;
+        StateHasChanged();
+
+        try
+        {
+            _availableFiles = await StorageService.GetRecentFilesAsync(50);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load available files");
+        }
+        finally
+        {
+            _isLoadingFiles = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectFile(FileMetadata file)
+    {
+        _currentFile = file;
+        _showFileSelector = false;
+        
+        // Update query if empty
+        if (string.IsNullOrWhiteSpace(_queryText))
+        {
+            _queryText = $"SELECT * FROM {file.FileName.Replace(".", "_")} LIMIT 100";
+            await ValidateQueryAsync();
+        }
+    }
+
+    private async Task ShowQueryHistory()
+    {
+        await LoadQueryHistory();
+        _showHistoryDialog = true;
+    }
+
+    private void UseHistoryQuery(QueryResult query)
+    {
+        _queryText = query.QueryText;
+        _showHistoryDialog = false;
+        ValidateQueryDebounced();
+    }
+
+    private void UseTemplate(QueryTemplate template)
+    {
+        _queryText = template.Query;
+        _showTemplates = false;
+        ValidateQueryDebounced();
+    }
+
+    private void ClearQuery()
+    {
+        _queryText = string.Empty;
+        _validationResult = null;
+        _lastResult = null;
+    }
+
+    private void ValidateQueryDebounced()
+    {
+        _validationTimer?.Dispose();
+        _validationTimer = new System.Threading.Timer(async _ => await ValidateQueryAsync(), null, 500, Timeout.Infinite);
+    }
+
+    private async Task ValidateQueryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_queryText))
+        {
+            _validationResult = null;
+            return;
+        }
+
+        try
+        {
+            _validationResult = await QueryEngineService.ValidateQueryAsync(_queryText);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Query validation failed");
+        }
+    }
+
+    private async Task ExportResults()
+    {
+        // TODO: Implement CSV export
+        await Task.Delay(1);
+    }
+
+    // Helper methods
+    private string GetFileIcon(FileFormat format) => format switch
+    {
+        FileFormat.Parquet => Icons.Material.Filled.TableChart,
+        FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+        FileFormat.CSV => Icons.Material.Filled.GridOn,
+        FileFormat.JSON => Icons.Material.Filled.DataObject,
+        _ => Icons.Material.Filled.InsertDriveFile
+    };
+
+    private Color GetFormatColor(FileFormat format) => format switch
+    {
+        FileFormat.Parquet => Color.Primary,
+        FileFormat.Delta => Color.Success,
+        FileFormat.CSV => Color.Info,
+        FileFormat.JSON => Color.Warning,
+        _ => Color.Default
+    };
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+        int counter = 0;
+        double number = bytes;
+        
+        while (Math.Round(number / 1024) >= 1)
+        {
+            number = number / 1024;
+            counter++;
+        }
+        
+        return $"{number:n1} {suffixes[counter]}";
+    }
+
+    private string FormatNumber(long number) => number.ToString("N0");
+    
+    private string FormatBytes(long bytes) => FormatFileSize(bytes);
+
+    private string FormatCellValue(object? value, string dataType)
+    {
+        if (value == null) return "";
+        
+        return dataType.ToLower() switch
+        {
+            "double" or "float" => ((double)value).ToString("N2"),
+            "int64" or "int32" or "integer" => ((long)value).ToString("N0"),
+            "datetime" or "timestamp" => value.ToString() ?? "",
+            "boolean" => value.ToString()?.ToLower() ?? "",
+            _ => value.ToString() ?? ""
+        };
+    }
+
+    private string GetCellStyle(string dataType)
+    {
+        return dataType.ToLower() switch
+        {
+            "double" or "float" or "int64" or "int32" or "integer" => "text-align: right;",
+            "boolean" => "color: var(--mud-palette-info);",
+            "datetime" or "timestamp" => "color: var(--mud-palette-tertiary);",
+            _ => ""
+        };
+    }
+
+    public void Dispose()
+    {
+        _validationTimer?.Dispose();
+    }
 }
