@@ -16,7 +16,7 @@
 
     <!-- Navigator Panel -->
     <div class="navigator-area @(_showNavigator ? "open" : "")">
-        <NavigatorPanel Files="@AppState.OpenFiles.ToList()"
+        <NavigatorPanel Files="@AppState.OpenFiles.Select(f => f.Metadata).ToList()"
                        SelectedFile="@AppState.ActiveFile?.Metadata"
                        CurrentSchema="@CurrentSchema"
                        Versions="@DeltaVersions"
@@ -200,7 +200,7 @@
     {
         if (AppState.ActiveFile != null)
         {
-            CurrentRowCount = AppState.ActiveFile.Metadata.RowCount ?? 0;
+            CurrentRowCount = AppState.ActiveFile.Metadata.RowCount;
             CurrentColumnCount = AppState.ActiveFile.Metadata.Schema?.Fields?.Count ?? 0;
             CurrentFileSize = AppState.ActiveFile.Metadata.FileSize;
             CurrentSchema = AppState.ActiveFile.Metadata.Schema;
@@ -259,7 +259,7 @@
         await Task.CompletedTask;
     }
 
-    private async Task HandleFieldSelected(Field field)
+    private async Task HandleFieldSelected(SchemaField field)
     {
         SelectedItemInfo = new SelectedItemInfo
         {

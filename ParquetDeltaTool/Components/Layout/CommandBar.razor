@@ -186,22 +186,18 @@
         switch (e.Key)
         {
             case "ArrowDown":
-                e.PreventDefault();
                 MoveSelection(1);
                 break;
             case "ArrowUp":
-                e.PreventDefault();
                 MoveSelection(-1);
                 break;
             case "Enter":
-                e.PreventDefault();
                 if (SelectedCommand != null)
                 {
                     await ExecuteCommand(SelectedCommand);
                 }
                 break;
             case "Escape":
-                e.PreventDefault();
                 Close();
                 break;
         }

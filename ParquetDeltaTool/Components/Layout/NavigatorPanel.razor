@@ -191,7 +191,7 @@
     [Parameter] public List<Bookmark>? Bookmarks { get; set; }
     
     [Parameter] public EventCallback<FileMetadata> OnFileSelected { get; set; }
-    [Parameter] public EventCallback<Field> OnFieldSelected { get; set; }
+    [Parameter] public EventCallback<SchemaField> OnFieldSelected { get; set; }
     [Parameter] public EventCallback<DeltaVersion> OnVersionSelected { get; set; }
     [Parameter] public EventCallback<Bookmark> OnBookmarkSelected { get; set; }
 
@@ -200,7 +200,7 @@
         await OnFileSelected.InvokeAsync(file);
     }
 
-    private async Task SelectField(Field field)
+    private async Task SelectField(SchemaField field)
     {
         await OnFieldSelected.InvokeAsync(field);
     }

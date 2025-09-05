@@ -34,6 +34,7 @@ public class FileMetadata
     public string CreatedBy { get; set; } = string.Empty;
     public Dictionary<string, string> Properties { get; set; } = new();
     public CompressionType Compression { get; set; } = CompressionType.None;
+    public TableSchema? Schema { get; set; }
 }
 
 public class ParquetFileMetadata : FileMetadata
@@ -106,7 +107,9 @@ public class ColumnStatistics
     public string ColumnName { get; set; } = string.Empty;
     public string DataType { get; set; } = string.Empty;
     public long NullCount { get; set; }
+    public double NullPercentage { get; set; }
     public long DistinctCount { get; set; }
+    public long UniqueCount { get; set; }
     public string? MinValue { get; set; }
     public string? MaxValue { get; set; }
     public double? MeanValue { get; set; }
@@ -200,13 +203,16 @@ public class SchemaField
 {
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
+    public string DataType { get; set; } = string.Empty;
     public bool Nullable { get; set; } = true;
+    public bool IsNullable { get; set; } = true;
     public Dictionary<string, object> Metadata { get; set; } = new();
     public List<SchemaField> Fields { get; set; } = new(); // For nested structures
 }
 
 public class TableSchema
 {
+    public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = "struct";
     public List<SchemaField> Fields { get; set; } = new();
 }
