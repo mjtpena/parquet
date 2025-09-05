@@ -1,0 +1,446 @@
+/* Three-Panel Layout Styles */
+.three-panel-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+        "command-bar command-bar command-bar"
+        "navigator main-canvas inspector"
+        "status-bar status-bar status-bar";
+    height: 100vh;
+    overflow: hidden;
+}
+
+.command-bar-area {
+    grid-area: command-bar;
+}
+
+.navigator-area {
+    grid-area: navigator;
+}
+
+.main-canvas-area {
+    grid-area: main-canvas;
+}
+
+.inspector-area {
+    grid-area: inspector;
+}
+
+.status-bar-area {
+    grid-area: status-bar;
+}
+
+/* Navigator Panel Styles */
+.navigator-panel {
+    background: var(--mud-palette-surface);
+    border-right: 1px solid var(--mud-palette-divider);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.navigator-panel .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--mud-palette-divider);
+    background: var(--mud-palette-background);
+}
+
+.navigator-panel .panel-title {
+    font-weight: 600;
+    margin: 0;
+}
+
+.navigator-panel .panel-menu-btn {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.navigator-panel .panel-menu-btn:hover {
+    opacity: 1;
+}
+
+.navigator-tabs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.navigator-tabs .mud-tabs-panels {
+    flex: 1;
+    overflow: hidden;
+}
+
+.navigator-tabs .panel-tab-content {
+    height: 100%;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* File Explorer Styles */
+.file-explorer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.explorer-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+
+.add-file-btn {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.file-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.file-node {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+    position: relative;
+}
+
+.file-node:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.file-node[aria-selected="true"] {
+    background: var(--mud-palette-primary-lighten);
+    color: var(--mud-palette-primary-text);
+}
+
+.file-node .file-icon {
+    position: relative;
+    margin-right: 12px;
+}
+
+.file-status-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--mud-palette-surface);
+}
+
+.file-status-indicator.status-valid {
+    background: var(--mud-palette-success);
+}
+
+.file-status-indicator.status-warning {
+    background: var(--mud-palette-warning);
+}
+
+.file-status-indicator.status-error {
+    background: var(--mud-palette-error);
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-meta {
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+    margin-top: 2px;
+}
+
+.file-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.file-node:hover .file-actions {
+    opacity: 1;
+}
+
+.file-menu-btn {
+    padding: 4px;
+}
+
+/* Schema Explorer Styles */
+.schema-explorer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.schema-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+
+.schema-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.schema-field {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+}
+
+.schema-field:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.schema-field .field-icon {
+    margin-right: 12px;
+}
+
+.schema-field .field-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.schema-field .field-name {
+    font-weight: 500;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
+.schema-field .field-type {
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    margin-top: 2px;
+}
+
+/* Version Timeline Styles */
+.version-timeline {
+    height: 100%;
+    overflow-y: auto;
+    padding: 8px 16px;
+}
+
+.timeline {
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--mud-palette-divider);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.timeline-item:hover {
+    background: var(--mud-palette-action-hover);
+    border-radius: 6px;
+    margin-left: -8px;
+    margin-right: -8px;
+    padding-left: 48px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 8px;
+    top: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--mud-palette-surface);
+    border: 3px solid var(--mud-palette-primary);
+}
+
+.timeline-item.current .timeline-marker {
+    background: var(--mud-palette-primary);
+    border-color: var(--mud-palette-primary);
+}
+
+.version-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.version-number {
+    font-weight: 600;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
+.version-date {
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.version-operation {
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+/* Bookmarks Styles */
+.bookmarks {
+    height: 100%;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.bookmark-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+}
+
+.bookmark-item:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.bookmark-item .mud-icon {
+    margin-right: 12px;
+}
+
+.bookmark-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.bookmark-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bookmark-path {
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    margin-top: 2px;
+}
+
+/* Empty State Styles */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    text-align: center;
+    min-height: 200px;
+}
+
+.empty-state .mud-icon {
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.empty-state .mud-text {
+    margin-bottom: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+    .three-panel-layout {
+        grid-template-columns: 280px 1fr 280px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .three-panel-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "command-bar"
+            "main-canvas"
+            "status-bar";
+    }
+    
+    .navigator-area,
+    .inspector-area {
+        display: none;
+    }
+    
+    /* Show panels as overlays on mobile */
+    .navigator-panel,
+    .inspector-panel {
+        position: fixed;
+        top: 64px;
+        bottom: 40px;
+        width: 320px;
+        z-index: 1300;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    }
+    
+    .navigator-panel {
+        left: -320px;
+        transition: left 0.3s ease;
+    }
+    
+    .navigator-panel.open {
+        left: 0;
+    }
+    
+    .inspector-panel {
+        right: -320px;
+        transition: right 0.3s ease;
+    }
+    
+    .inspector-panel.open {
+        right: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .navigator-panel,
+    .inspector-panel {
+        width: 100%;
+        left: -100%;
+        right: -100%;
+    }
+    
+    .navigator-panel.open {
+        left: 0;
+    }
+    
+    .inspector-panel.open {
+        right: 0;
+    }
+}

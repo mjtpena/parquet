@@ -1,0 +1,303 @@
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Components.Layout
+@using MudBlazor
+
+<div class="navigator-panel" role="complementary" aria-label="Navigator">
+    <div class="panel-header">
+        <MudText Typo="Typo.h6" Class="panel-title">Navigator</MudText>
+        <MudIconButton Icon="Icons.Material.Filled.MoreVert" 
+                      Size="Size.Small" 
+                      Class="panel-menu-btn" />
+    </div>
+
+    <MudTabs Elevation="0" 
+             Position="Position.Top" 
+             PanelClass="panel-tab-content"
+             Class="navigator-tabs">
+        
+        <!-- File Explorer Tab -->
+        <MudTabPanel Text="Files" Icon="Icons.Material.Filled.Folder">
+            <div class="file-explorer">
+                <div class="explorer-header">
+                    <MudButton StartIcon="Icons.Material.Filled.Add" 
+                              Variant="Variant.Text" 
+                              Size="Size.Small"
+                              Class="add-file-btn">
+                        Add File
+                    </MudButton>
+                </div>
+                
+                <div class="file-tree">
+                    @if (Files?.Any() == true)
+                    {
+                        @foreach (var file in Files)
+                        {
+                            <div class="file-node @GetFileStatusClass(file)" 
+                                 @onclick="() => SelectFile(file)"
+                                 tabindex="0"
+                                 role="treeitem"
+                                 aria-selected="@(SelectedFile?.FileId == file.FileId)">
+                                <div class="file-icon">
+                                    <MudIcon Icon="@GetFileIcon(file.Format)" 
+                                            Size="Size.Small" 
+                                            Color="@GetFileIconColor(file.Format)" />
+                                    <span class="file-status-indicator @GetFileStatusIndicator(file)"></span>
+                                </div>
+                                <div class="file-info">
+                                    <div class="file-name">@file.FileName</div>
+                                    <div class="file-meta">@FormatFileSize(file.FileSize)</div>
+                                </div>
+                                <div class="file-actions">
+                                    <MudIconButton Icon="Icons.Material.Filled.MoreVert" 
+                                                  Size="Size.Small" 
+                                                  Class="file-menu-btn" />
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <MudIcon Icon="Icons.Material.Filled.FolderOpen" Size="Size.Large" Color="Color.Tertiary" />
+                            <MudText Typo="Typo.body2" Color="Color.Tertiary">No files opened</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Tertiary">Upload or open a file to get started</MudText>
+                        </div>
+                    }
+                </div>
+            </div>
+        </MudTabPanel>
+
+        <!-- Schema Tab -->
+        <MudTabPanel Text="Schema" Icon="Icons.Material.Filled.AccountTree">
+            <div class="schema-explorer">
+                @if (CurrentSchema != null)
+                {
+                    <div class="schema-header">
+                        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.subtitle2">@CurrentSchema.Name</MudText>
+                            <MudIconButton Icon="Icons.Material.Filled.Refresh" 
+                                          Size="Size.Small" 
+                                          OnClick="RefreshSchema" />
+                        </MudStack>
+                    </div>
+                    
+                    <div class="schema-tree">
+                        @foreach (var field in CurrentSchema.Fields)
+                        {
+                            <div class="schema-field" 
+                                 @onclick="() => SelectField(field)"
+                                 tabindex="0"
+                                 role="treeitem">
+                                <div class="field-icon">
+                                    <MudIcon Icon="@GetFieldIcon(field.DataType)" 
+                                            Size="Size.Small" 
+                                            Color="@GetFieldColor(field.DataType)" />
+                                </div>
+                                <div class="field-info">
+                                    <div class="field-name">@field.Name</div>
+                                    <div class="field-type">@field.DataType</div>
+                                </div>
+                                @if (field.IsNullable)
+                                {
+                                    <MudChip Size="Size.Small" Variant="Variant.Text" Color="Color.Warning">nullable</MudChip>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.Schema" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No schema available</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Open a file to view its schema</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+
+        <!-- Versions Tab (Delta Lake) -->
+        <MudTabPanel Text="Versions" Icon="Icons.Material.Filled.Timeline">
+            <div class="version-timeline">
+                @if (Versions?.Any() == true)
+                {
+                    <div class="timeline">
+                        @foreach (var version in Versions.Take(10))
+                        {
+                            <div class="timeline-item @(version.IsCurrent ? "current" : "")"
+                                 @onclick="() => SelectVersion(version)"
+                                 tabindex="0"
+                                 role="button">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <div class="version-header">
+                                        <span class="version-number">v@version.Version</span>
+                                        <span class="version-date">@version.CreatedAt.ToString("MMM dd")</span>
+                                    </div>
+                                    <div class="version-operation">@version.Operation</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.History" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No version history</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Delta Lake files will show version history here</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+
+        <!-- Bookmarks Tab -->
+        <MudTabPanel Text="Bookmarks" Icon="Icons.Material.Filled.Bookmark">
+            <div class="bookmarks">
+                @if (Bookmarks?.Any() == true)
+                {
+                    @foreach (var bookmark in Bookmarks)
+                    {
+                        <div class="bookmark-item"
+                             @onclick="() => NavigateToBookmark(bookmark)"
+                             tabindex="0"
+                             role="button">
+                            <MudIcon Icon="@bookmark.Icon" Size="Size.Small" Color="Color.Primary" />
+                            <div class="bookmark-info">
+                                <div class="bookmark-name">@bookmark.Name</div>
+                                <div class="bookmark-path">@bookmark.Path</div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.BookmarkBorder" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No bookmarks</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Save frequently used views and queries</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+    </MudTabs>
+</div>
+
+@code {
+    [Parameter] public List<FileMetadata>? Files { get; set; }
+    [Parameter] public FileMetadata? SelectedFile { get; set; }
+    [Parameter] public TableSchema? CurrentSchema { get; set; }
+    [Parameter] public List<DeltaVersion>? Versions { get; set; }
+    [Parameter] public List<Bookmark>? Bookmarks { get; set; }
+    
+    [Parameter] public EventCallback<FileMetadata> OnFileSelected { get; set; }
+    [Parameter] public EventCallback<SchemaField> OnFieldSelected { get; set; }
+    [Parameter] public EventCallback<DeltaVersion> OnVersionSelected { get; set; }
+    [Parameter] public EventCallback<Bookmark> OnBookmarkSelected { get; set; }
+
+    private async Task SelectFile(FileMetadata file)
+    {
+        await OnFileSelected.InvokeAsync(file);
+    }
+
+    private async Task SelectField(SchemaField field)
+    {
+        await OnFieldSelected.InvokeAsync(field);
+    }
+
+    private async Task SelectVersion(DeltaVersion version)
+    {
+        await OnVersionSelected.InvokeAsync(version);
+    }
+
+    private async Task NavigateToBookmark(Bookmark bookmark)
+    {
+        await OnBookmarkSelected.InvokeAsync(bookmark);
+    }
+
+    private async Task RefreshSchema()
+    {
+        // Trigger schema refresh
+        StateHasChanged();
+    }
+
+    private string GetFileIcon(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Icons.Material.Filled.TableChart,
+            FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+            FileFormat.CSV => Icons.Material.Filled.Description,
+            FileFormat.JSON => Icons.Material.Filled.DataObject,
+            _ => Icons.Material.Filled.InsertDriveFile
+        };
+    }
+
+    private Color GetFileIconColor(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Color.Primary,
+            FileFormat.Delta => Color.Tertiary,
+            FileFormat.CSV => Color.Warning,
+            FileFormat.JSON => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private string GetFileStatusClass(FileMetadata file)
+    {
+        // Add validation logic here
+        return "valid";
+    }
+
+    private string GetFileStatusIndicator(FileMetadata file)
+    {
+        // Return CSS class for status indicator
+        return "status-valid";
+    }
+
+    private string GetFieldIcon(string dataType)
+    {
+        return dataType.ToLower() switch
+        {
+            "string" or "varchar" or "text" => Icons.Material.Filled.TextFields,
+            "int" or "integer" or "bigint" or "smallint" => Icons.Material.Filled.Numbers,
+            "double" or "float" or "decimal" => Icons.Material.Filled.Functions,
+            "boolean" or "bool" => Icons.Material.Filled.ToggleOn,
+            "date" or "datetime" or "timestamp" => Icons.Material.Filled.CalendarToday,
+            "array" or "list" => Icons.Material.Filled.List,
+            "struct" or "object" => Icons.Material.Filled.DataObject,
+            _ => Icons.Material.Filled.Circle
+        };
+    }
+
+    private Color GetFieldColor(string dataType)
+    {
+        return dataType.ToLower() switch
+        {
+            "string" or "varchar" or "text" => Color.Success,
+            "int" or "integer" or "bigint" or "smallint" => Color.Primary,
+            "double" or "float" or "decimal" => Color.Info,
+            "boolean" or "bool" => Color.Error,
+            "date" or "datetime" or "timestamp" => Color.Secondary,
+            "array" or "list" => Color.Warning,
+            "struct" or "object" => Color.Tertiary,
+            _ => Color.Default
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double len = bytes;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
+}

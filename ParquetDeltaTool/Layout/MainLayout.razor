@@ -5,83 +5,11 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="0" 
-               Color="Color.Transparent" 
-               Class="app-bar backdrop-blur-sm border-b"
-               Style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
-        <MudIconButton Icon="Icons.Material.Filled.Menu" 
-                      Color="Color.Inherit" 
-                      Edge="Edge.Start" 
-                      OnClick="@ToggleDrawer"
-                      Class="mobile-nav-toggle touch-target" />
-        
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="brand-logo">
-            <MudIcon Icon="Icons.Material.Filled.Storage" Style="color: var(--color-primary-600);" Size="Size.Medium" />
-            <MudText Typo="Typo.h6" Class="typography-h4" Style="margin: 0;">
-                <span class="typography-parquet">Parquet</span>
-                <span class="typography-muted" style="margin: 0 0.25rem;">&</span>
-                <span class="typography-delta">Delta</span>
-                <span class="typography-subtle" style="margin-left: 0.5rem; font-weight: var(--font-normal);">Tool</span>
-            </MudText>
-        </MudStack>
-        
-        <MudSpacer />
-        
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="1" Class="nav-actions desktop-only">
-            <MudTooltip Text="Toggle Theme">
-                <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
-                              Color="Color.Inherit" 
-                              OnClick="@ToggleTheme"
-                              Class="touch-target" />
-            </MudTooltip>
-            
-            <MudTooltip Text="Settings">
-                <MudIconButton Icon="Icons.Material.Filled.Settings" 
-                              Color="Color.Inherit"
-                              Href="/settings"
-                              Class="touch-target" />
-            </MudTooltip>
-            
-            <MudTooltip Text="Documentation">
-                <MudIconButton Icon="Icons.Material.Filled.Help" 
-                              Color="Color.Inherit"
-                              Href="/about"
-                              Class="touch-target" />
-            </MudTooltip>
-            
-            <MudButton StartIcon="Icons.Custom.Brands.GitHub"
-                      Variant="Variant.Outlined"
-                      Size="Size.Small"
-                      Color="Color.Primary"
-                      Href="https://github.com/mjtpena/parquet"
-                      Target="_blank"
-                      Class="github-button">
-                GitHub
-            </MudButton>
-        </MudStack>
-    </MudAppBar>
-
-    <MudDrawer @bind-Open="@_drawerOpen" 
-               ClipMode="DrawerClipMode.Always" 
-               Elevation="0"
-               Class="navigation-drawer"
-               Variant="DrawerVariant.Mini"
-               OpenMiniOnHover="true">
-        <NavMenu />
-    </MudDrawer>
-
-    <MudMainContent Class="main-content">
-        <div class="page-wrapper min-h-screen">
-            <MudContainer MaxWidth="MaxWidth.False" Class="main-container">
-                @Body
-            </MudContainer>
-        </div>
-    </MudMainContent>
-</MudLayout>
+<ThreePanelLayout IsDarkMode="@_isDarkMode" IsDarkModeChanged="OnThemeChanged">
+    @Body
+</ThreePanelLayout>
 
 @code {
-    private bool _drawerOpen = true;
     private bool _isDarkMode = false;
 
     private MudTheme _currentTheme => new()
@@ -180,14 +108,9 @@
         await Task.CompletedTask;
     }
 
-    private void ToggleDrawer()
+    private async Task OnThemeChanged(bool isDarkMode)
     {
-        _drawerOpen = !_drawerOpen;
-    }
-
-    private async Task ToggleTheme()
-    {
-        _isDarkMode = !_isDarkMode;
+        _isDarkMode = isDarkMode;
         // In a real app, save to localStorage
         await Task.CompletedTask;
         StateHasChanged();
