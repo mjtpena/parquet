@@ -13,7 +13,7 @@ public class ApplicationState
     public List<FileMetadata> LoadedFiles => _loadedFiles;
     public UserPreferences Preferences { get; set; } = new();
     
-    public Action OnChange => () => StateChanged?.Invoke(this, EventArgs.Empty);
+    public Action? OnChange { get; set; }
 
     public void OpenFile(FileMetadata metadata)
     {
@@ -72,7 +72,11 @@ public class ApplicationState
         }
     }
 
-    private void NotifyStateChanged() => StateChanged?.Invoke(this, EventArgs.Empty);
+    private void NotifyStateChanged() 
+    {
+        StateChanged?.Invoke(this, EventArgs.Empty);
+        OnChange?.Invoke();
+    }
 }
 
 public class FileState
