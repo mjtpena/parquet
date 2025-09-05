@@ -1,0 +1,537 @@
+@page "/delta/history"
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Services
+@inject ApplicationState AppState
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Version History - Parquet & Delta Lake Tool</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-6" Elevation="2">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudStack>
+                        <MudText Typo="Typo.h4">Delta Lake Version History</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Secondary">
+                            Explore table versions, time travel, and transaction logs
+                        </MudText>
+                    </MudStack>
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.ChangeHistory" Size="Size.Large" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@versionsCount Versions</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Table Selection -->
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Delta Table Selection</MudText>
+                    
+                    @if (deltaFiles.Any())
+                    {
+                        <MudSelect @bind-Value="selectedTable" Label="Select Delta Table" Variant="Variant.Outlined" Dense="true">
+                            @foreach (var file in deltaFiles)
+                            {
+                                <MudSelectItem Value="file.Id">@file.FileName</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            No Delta Lake tables loaded. Please load Delta tables from the Home page.
+                        </MudAlert>
+                    }
+                    
+                    @if (selectedTableInfo != null)
+                    {
+                        <MudCard>
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudText Typo="Typo.subtitle1">@selectedTableInfo.FileName</MudText>
+                                    <MudStack Row Spacing="2" FlexWrap="FlexWrap.Wrap">
+                                        <MudChip Color="Color.Primary" Size="Size.Small">@selectedTableInfo.Format</MudChip>
+                                        <MudChip Color="Color.Info" Size="Size.Small">@selectedTableInfo.RowCount rows</MudChip>
+                                        <MudChip Color="Color.Success" Size="Size.Small">v@currentVersion</MudChip>
+                                    </MudStack>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                    
+                    <MudButton StartIcon="Icons.Material.Filled.Refresh"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              OnClick="RefreshVersionHistory"
+                              Disabled="selectedTable == null">
+                        Refresh History
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Version Timeline -->
+        <MudItem xs="12" lg="8">
+            <MudPaper Class="pa-4" Elevation="1" Style="height: 400px; overflow-y: auto;">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Version Timeline</MudText>
+                    
+                    @if (versionHistory.Any())
+                    {
+                        <MudTimeline>
+                            @foreach (var version in versionHistory.OrderByDescending(v => v.Version))
+                            {
+                                <MudTimelineItem Color="@(version.Version == currentVersion ? Color.Primary : Color.Default)"
+                                               Size="Size.Small">
+                                    <ItemDot>
+                                        @if (version.Version == currentVersion)
+                                        {
+                                            <MudIcon Icon="Icons.Material.Filled.Star" Size="Size.Small" />
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="Icons.Material.Filled.Circle" Size="Size.Small" />
+                                        }
+                                    </ItemDot>
+                                    <ItemContent>
+                                        <MudCard>
+                                            <MudCardContent>
+                                                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                    <MudStack>
+                                                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                                            <MudText Typo="Typo.h6">Version @version.Version</MudText>
+                                                            @if (version.Version == currentVersion)
+                                                            {
+                                                                <MudChip Color="Color.Primary" Size="Size.Small">Current</MudChip>
+                                                            }
+                                                        </MudStack>
+                                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                            @version.Operation • @version.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+                                                        </MudText>
+                                                        <MudText Typo="Typo.body2">@version.Description</MudText>
+                                                        @if (version.Metrics.Any())
+                                                        {
+                                                            <MudStack Row Spacing="3" Class="mt-2">
+                                                                @foreach (var metric in version.Metrics.Take(3))
+                                                                {
+                                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                                        @metric.Key: @metric.Value
+                                                                    </MudText>
+                                                                }
+                                                            </MudStack>
+                                                        }
+                                                    </MudStack>
+                                                    <MudStack Row Spacing="1">
+                                                        <MudIconButton Icon="Icons.Material.Filled.Visibility"
+                                                                      Size="Size.Small"
+                                                                      Title="View Version"
+                                                                      OnClick="() => ViewVersion(version.Version)" />
+                                                        <MudIconButton Icon="Icons.Material.Filled.Compare"
+                                                                      Size="Size.Small"
+                                                                      Title="Compare Versions"
+                                                                      OnClick="() => CompareVersions(version.Version)" />
+                                                        <MudIconButton Icon="Icons.Material.Filled.Restore"
+                                                                      Size="Size.Small"
+                                                                      Title="Restore to Version"
+                                                                      Color="Color.Warning"
+                                                                      OnClick="() => RestoreToVersion(version.Version)" />
+                                                    </MudStack>
+                                                </MudStack>
+                                            </MudCardContent>
+                                        </MudCard>
+                                    </ItemContent>
+                                </MudTimelineItem>
+                            }
+                        </MudTimeline>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            No version history available. Select a Delta table to view its history.
+                        </MudAlert>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Time Travel Query -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Time Travel Query</MudText>
+                    
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudSelect @bind-Value="timeTravelMode" Label="Time Travel Mode" Variant="Variant.Outlined" Dense="true">
+                                <MudSelectItem Value="TimeTravelMode.Version">By Version</MudSelectItem>
+                                <MudSelectItem Value="TimeTravelMode.Timestamp">By Timestamp</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        
+                        <MudItem xs="12" md="6">
+                            @if (timeTravelMode == TimeTravelMode.Version)
+                            {
+                                <MudNumericField @bind-Value="selectedVersion" 
+                                               Label="Version Number" 
+                                               Variant="Variant.Outlined" 
+                                               Min="0" 
+                                               Max="@(versionHistory.Any() ? versionHistory.Max(v => v.Version) : 0)" />
+                            }
+                            else
+                            {
+                                <MudDatePicker @bind-Date="selectedTimestamp" 
+                                             Label="Timestamp" 
+                                             Variant="Variant.Outlined" 
+                                             DisableToolbar="true" />
+                            }
+                        </MudItem>
+                    </MudGrid>
+                    
+                    <MudTextField @bind-Value="timeTravelQuery"
+                                 Label="SQL Query"
+                                 Variant="Variant.Outlined"
+                                 Lines="3"
+                                 Placeholder="SELECT * FROM table_name VERSION AS OF version" />
+                    
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.PlayArrow"
+                                  Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  OnClick="ExecuteTimeTravelQuery"
+                                  Disabled="@(string.IsNullOrEmpty(selectedTable))">
+                            Execute Query
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.ContentCopy"
+                                  Variant="Variant.Outlined"
+                                  OnClick="GenerateTimeTravelQuery">
+                            Generate Query
+                        </MudButton>
+                    </MudStack>
+                    
+                    @if (queryResults != null)
+                    {
+                        <MudAlert Severity="Severity.Success">
+                            Query executed successfully. Found @queryResults.RowCount rows from version @queryResults.Version.
+                        </MudAlert>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Transaction Log Details -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6">Transaction Log Details</MudText>
+                        <MudButton StartIcon="Icons.Material.Filled.Download"
+                                  Variant="Variant.Outlined"
+                                  Size="Size.Small"
+                                  OnClick="DownloadTransactionLog">
+                            Download Log
+                        </MudButton>
+                    </MudStack>
+                    
+                    @if (selectedVersionDetails != null)
+                    {
+                        <MudExpansionPanels Elevation="0" Outlined="true">
+                            <MudExpansionPanel Text="Commit Info">
+                                <MudSimpleTable Dense="true">
+                                    <thead>
+                                        <tr>
+                                            <th>Property</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Version</td>
+                                            <td>@selectedVersionDetails.Version</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Timestamp</td>
+                                            <td>@selectedVersionDetails.Timestamp</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Operation</td>
+                                            <td>@selectedVersionDetails.Operation</td>
+                                        </tr>
+                                        <tr>
+                                            <td>User</td>
+                                            <td>@selectedVersionDetails.UserId</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Engine Info</td>
+                                            <td>@selectedVersionDetails.EngineInfo</td>
+                                        </tr>
+                                    </tbody>
+                                </MudSimpleTable>
+                            </MudExpansionPanel>
+                            
+                            <MudExpansionPanel Text="Operation Metrics">
+                                <MudSimpleTable Dense="true">
+                                    <thead>
+                                        <tr>
+                                            <th>Metric</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var metric in selectedVersionDetails.Metrics)
+                                        {
+                                            <tr>
+                                                <td>@metric.Key</td>
+                                                <td>@metric.Value</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </MudSimpleTable>
+                            </MudExpansionPanel>
+                            
+                            <MudExpansionPanel Text="Schema Changes">
+                                @if (selectedVersionDetails.SchemaChanges.Any())
+                                {
+                                    <MudAlert Severity="Severity.Info" Class="mb-3">
+                                        This version includes schema changes.
+                                    </MudAlert>
+                                    @foreach (var change in selectedVersionDetails.SchemaChanges)
+                                    {
+                                        <MudChip Color="@GetSchemaChangeColor(change)" Size="Size.Small" Class="ma-1">
+                                            @change
+                                        </MudChip>
+                                    }
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">No schema changes in this version.</MudText>
+                                }
+                            </MudExpansionPanel>
+                        </MudExpansionPanels>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            Select a version from the timeline to view detailed transaction log information.
+                        </MudAlert>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private string? selectedTable;
+    private FileMetadata? selectedTableInfo;
+    private List<FileMetadata> deltaFiles = new();
+    private List<DeltaVersion> versionHistory = new();
+    private DeltaVersionDetails? selectedVersionDetails;
+    private int versionsCount = 0;
+    private int currentVersion = 5;
+
+    // Time Travel
+    private TimeTravelMode timeTravelMode = TimeTravelMode.Version;
+    private int selectedVersion = 0;
+    private DateTime? selectedTimestamp = DateTime.Today;
+    private string timeTravelQuery = "";
+    private TimeTravelQueryResult? queryResults;
+
+    protected override void OnInitialized()
+    {
+        LoadDeltaFiles();
+        GenerateMockVersionHistory();
+    }
+
+    private void LoadDeltaFiles()
+    {
+        deltaFiles = AppState.LoadedFiles.Where(f => f.Format == FileFormat.Delta).ToList();
+        if (deltaFiles.Any())
+        {
+            selectedTable = deltaFiles.First().Id;
+            selectedTableInfo = deltaFiles.First();
+        }
+    }
+
+    private void GenerateMockVersionHistory()
+    {
+        if (selectedTable == null) return;
+
+        versionHistory = new List<DeltaVersion>
+        {
+            new() {
+                Version = 5,
+                Timestamp = DateTime.Now.AddHours(-1),
+                Operation = "MERGE",
+                Description = "Upserted 15,234 records with customer updates",
+                Metrics = new() { {"numTargetRowsInserted", "1,234"}, {"numTargetRowsUpdated", "14,000"}, {"numSourceRows", "15,234"} }
+            },
+            new() {
+                Version = 4,
+                Timestamp = DateTime.Now.AddHours(-6),
+                Operation = "DELETE",
+                Description = "Removed inactive records from last quarter",
+                Metrics = new() { {"numRemovedFiles", "3"}, {"numDeletedRows", "5,678"}, {"executionTimeMs", "2,345"} }
+            },
+            new() {
+                Version = 3,
+                Timestamp = DateTime.Now.AddDays(-1),
+                Operation = "OPTIMIZE",
+                Description = "Optimized table layout and compacted small files",
+                Metrics = new() { {"numRemovedFiles", "45"}, {"numAddedFiles", "12"}, {"filesCompacted", "33"} }
+            },
+            new() {
+                Version = 2,
+                Timestamp = DateTime.Now.AddDays(-2),
+                Operation = "UPDATE",
+                Description = "Updated pricing information for product catalog",
+                Metrics = new() { {"numUpdatedRows", "23,456"}, {"numFiles", "8"}, {"executionTimeMs", "5,432"} }
+            },
+            new() {
+                Version = 1,
+                Timestamp = DateTime.Now.AddDays(-7),
+                Operation = "WRITE",
+                Description = "Initial data load from legacy system migration",
+                Metrics = new() { {"numFiles", "15"}, {"numInsertedRows", "1,000,000"}, {"outputBytes", "250MB"} }
+            },
+            new() {
+                Version = 0,
+                Timestamp = DateTime.Now.AddDays(-14),
+                Operation = "CREATE TABLE",
+                Description = "Created Delta table with initial schema",
+                Metrics = new() { {"isBlindAppend", "true"}, {"partitionBy", "[\"date\"]"}, {"schemaColumns", "12"} }
+            }
+        };
+
+        versionsCount = versionHistory.Count;
+    }
+
+    private async Task RefreshVersionHistory()
+    {
+        if (selectedTable == null) return;
+        
+        // Simulate refresh
+        await Task.Delay(500);
+        GenerateMockVersionHistory();
+        StateHasChanged();
+    }
+
+    private async Task ViewVersion(int version)
+    {
+        selectedVersionDetails = new DeltaVersionDetails
+        {
+            Version = version,
+            Timestamp = versionHistory.First(v => v.Version == version).Timestamp,
+            Operation = versionHistory.First(v => v.Version == version).Operation,
+            UserId = "user@example.com",
+            EngineInfo = "Apache Spark 3.4.0 Delta 2.4.0",
+            Metrics = versionHistory.First(v => v.Version == version).Metrics,
+            SchemaChanges = version switch
+            {
+                3 => new List<string> { "Added column: last_updated", "Modified column: price (precision increased)" },
+                1 => new List<string> { "Added partition: date", "Added column: customer_segment" },
+                _ => new List<string>()
+            }
+        };
+        
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+
+    private async Task CompareVersions(int version)
+    {
+        // TODO: Implement version comparison
+        await Task.CompletedTask;
+    }
+
+    private async Task RestoreToVersion(int version)
+    {
+        // TODO: Implement version restoration
+        await Task.CompletedTask;
+    }
+
+    private void GenerateTimeTravelQuery()
+    {
+        if (selectedTable == null) return;
+
+        var tableName = selectedTableInfo?.FileName.Replace(".delta", "") ?? "my_table";
+        
+        if (timeTravelMode == TimeTravelMode.Version)
+        {
+            timeTravelQuery = $"SELECT * FROM {tableName} VERSION AS OF {selectedVersion}";
+        }
+        else if (selectedTimestamp.HasValue)
+        {
+            timeTravelQuery = $"SELECT * FROM {tableName} TIMESTAMP AS OF '{selectedTimestamp.Value:yyyy-MM-dd}'";
+        }
+    }
+
+    private async Task ExecuteTimeTravelQuery()
+    {
+        if (string.IsNullOrEmpty(timeTravelQuery)) return;
+
+        // Simulate query execution
+        await Task.Delay(1000);
+        
+        queryResults = new TimeTravelQueryResult
+        {
+            Version = selectedVersion,
+            RowCount = Random.Shared.Next(1000, 100000),
+            ExecutionTime = TimeSpan.FromMilliseconds(Random.Shared.Next(100, 5000))
+        };
+        
+        StateHasChanged();
+    }
+
+    private async Task DownloadTransactionLog()
+    {
+        // TODO: Implement transaction log download
+        await Task.CompletedTask;
+    }
+
+    private Color GetSchemaChangeColor(string change)
+    {
+        if (change.StartsWith("Added")) return Color.Success;
+        if (change.StartsWith("Modified")) return Color.Warning;
+        if (change.StartsWith("Removed")) return Color.Error;
+        return Color.Info;
+    }
+
+    public enum TimeTravelMode
+    {
+        Version,
+        Timestamp
+    }
+
+    public class DeltaVersion
+    {
+        public int Version { get; set; }
+        public DateTime Timestamp { get; set; }
+        public string Operation { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public Dictionary<string, string> Metrics { get; set; } = new();
+    }
+
+    public class DeltaVersionDetails
+    {
+        public int Version { get; set; }
+        public DateTime Timestamp { get; set; }
+        public string Operation { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        public string EngineInfo { get; set; } = string.Empty;
+        public Dictionary<string, string> Metrics { get; set; } = new();
+        public List<string> SchemaChanges { get; set; } = new();
+    }
+
+    public class TimeTravelQueryResult
+    {
+        public int Version { get; set; }
+        public int RowCount { get; set; }
+        public TimeSpan ExecutionTime { get; set; }
+    }
+}

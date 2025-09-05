@@ -5,11 +5,15 @@ namespace ParquetDeltaTool.State;
 public class ApplicationState
 {
     private readonly List<FileState> _openFiles = new();
+    private readonly List<FileMetadata> _loadedFiles = new();
     public event EventHandler? StateChanged;
 
     public FileState? ActiveFile { get; private set; }
     public IReadOnlyList<FileState> OpenFiles => _openFiles.AsReadOnly();
+    public List<FileMetadata> LoadedFiles => _loadedFiles;
     public UserPreferences Preferences { get; set; } = new();
+    
+    public Action OnChange => () => StateChanged?.Invoke(this, EventArgs.Empty);
 
     public void OpenFile(FileMetadata metadata)
     {

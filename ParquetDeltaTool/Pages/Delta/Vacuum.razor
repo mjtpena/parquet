@@ -1,0 +1,608 @@
+@page "/delta/vacuum"
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Services
+@inject ApplicationState AppState
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Delta Vacuum - Parquet & Delta Lake Tool</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-6" Elevation="2">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudStack>
+                        <MudText Typo="Typo.h4">Delta Lake Vacuum</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Secondary">
+                            Clean up uncommitted files and reclaim storage space
+                        </MudText>
+                    </MudStack>
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.CleaningServices" Size="Size.Large" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@vacuumOpsRun Operations</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Table Selection & Storage Analysis -->
+        <MudItem xs="12" lg="8">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Storage Analysis</MudText>
+                    
+                    @if (deltaFiles.Any())
+                    {
+                        <MudSelect @bind-Value="selectedTable" Label="Select Delta Table" Variant="Variant.Outlined" Dense="true">
+                            @foreach (var file in deltaFiles)
+                            {
+                                <MudSelectItem Value="file.Id">@file.FileName</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            No Delta Lake tables loaded. Please load Delta tables from the Home page.
+                        </MudAlert>
+                    }
+                    
+                    @if (storageAnalysis != null)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudPaper Class="pa-3" Elevation="0" Style="border: 1px solid var(--mud-palette-divider);">
+                                    <MudStack AlignItems="AlignItems.Center">
+                                        <MudIcon Icon="Icons.Material.Filled.Storage" Color="Color.Primary" Size="Size.Large" />
+                                        <MudText Typo="Typo.h6">@((storageAnalysis.TotalSize / 1024 / 1024 / 1024).ToString("F2")) GB</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">Total Size</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudPaper Class="pa-3" Elevation="0" Style="border: 1px solid var(--mud-palette-divider);">
+                                    <MudStack AlignItems="AlignItems.Center">
+                                        <MudIcon Icon="Icons.Material.Filled.Delete" Color="Color.Warning" Size="Size.Large" />
+                                        <MudText Typo="Typo.h6">@((storageAnalysis.UncommittedSize / 1024 / 1024).ToString("F1")) MB</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">Uncommitted</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudPaper Class="pa-3" Elevation="0" Style="border: 1px solid var(--mud-palette-divider);">
+                                    <MudStack AlignItems="AlignItems.Center">
+                                        <MudIcon Icon="Icons.Material.Filled.FolderOpen" Color="Color.Info" Size="Size.Large" />
+                                        <MudText Typo="Typo.h6">@storageAnalysis.UncommittedFiles</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">Uncommitted Files</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudPaper Class="pa-3" Elevation="0" Style="border: 1px solid var(--mud-palette-divider);">
+                                    <MudStack AlignItems="AlignItems.Center">
+                                        <MudIcon Icon="Icons.Material.Filled.Schedule" Color="Color.Success" Size="Size.Large" />
+                                        <MudText Typo="Typo.h6">@storageAnalysis.DaysOldest</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">Days (Oldest)</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                        </MudGrid>
+                        
+                        @if (storageAnalysis.UncommittedSize > 100 * 1024 * 1024) // > 100MB
+                        {
+                            <MudAlert Severity="Severity.Warning">
+                                <MudText><strong>@((storageAnalysis.UncommittedSize / 1024 / 1024).ToString("F1")) MB</strong> of uncommitted files detected. Running vacuum will free up this space.</MudText>
+                            </MudAlert>
+                        }
+                        else if (storageAnalysis.UncommittedFiles > 0)
+                        {
+                            <MudAlert Severity="Severity.Info">
+                                <MudText>@storageAnalysis.UncommittedFiles uncommitted files found. Space reclamation potential is minimal.</MudText>
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Success">
+                                <MudText>No uncommitted files found. Table is already clean.</MudText>
+                            </MudAlert>
+                        }
+                    }
+                    
+                    <MudButton StartIcon="Icons.Material.Filled.Analytics"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              OnClick="AnalyzeStorage"
+                              Disabled="selectedTable == null || isAnalyzing">
+                        @if (isAnalyzing)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ml-2">Analyzing Storage...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Analyze Storage</MudText>
+                        }
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Vacuum Settings -->
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Vacuum Settings</MudText>
+                    
+                    <MudNumericField @bind-Value="retentionHours" 
+                                   Label="Retention hours" 
+                                   Variant="Variant.Outlined" 
+                                   Min="1" 
+                                   Max="8760"
+                                   HelperText="Files older than this will be deleted" />
+                    
+                    <MudSwitch @bind-Checked="dryRun" 
+                             Label="Dry run (preview only)" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="parallelVacuum" 
+                             Label="Parallel processing" 
+                             Color="Color.Primary" />
+                    
+                    @if (parallelVacuum)
+                    {
+                        <MudNumericField @bind-Value="parallelism" 
+                                       Label="Parallelism level" 
+                                       Variant="Variant.Outlined" 
+                                       Min="1" 
+                                       Max="16" />
+                    }
+                    
+                    <MudDivider />
+                    
+                    <MudText Typo="Typo.subtitle2">Safety Settings</MudText>
+                    
+                    <MudSwitch @bind-Checked="skipHistoryCheck" 
+                             Label="Skip version history check" 
+                             Color="Color.Warning"
+                             Class="mud-warning" />
+                    
+                    @if (skipHistoryCheck)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true">
+                            <MudText Typo="Typo.body2">
+                                <strong>Warning:</strong> Skipping history check may remove files needed for time travel queries.
+                            </MudText>
+                        </MudAlert>
+                    }
+                    
+                    <MudSelect @bind-Value="vacuumMode" 
+                             Label="Vacuum mode" 
+                             Variant="Variant.Outlined">
+                        <MudSelectItem Value="VacuumMode.Safe">Safe (default retention)</MudSelectItem>
+                        <MudSelectItem Value="VacuumMode.Aggressive">Aggressive (custom retention)</MudSelectItem>
+                        <MudSelectItem Value="VacuumMode.Preview">Preview only</MudSelectItem>
+                    </MudSelect>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Vacuum Actions -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudButton StartIcon="Icons.Material.Filled.CleaningServices"
+                                  Variant="Variant.Filled"
+                                  Color="@(dryRun ? Color.Info : Color.Primary)"
+                                  Size="Size.Large"
+                                  OnClick="StartVacuum"
+                                  Disabled="selectedTable == null || isVacuuming">
+                            @if (isVacuuming)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ml-2">@(dryRun ? "Analyzing..." : "Vacuuming...")</MudText>
+                            }
+                            else
+                            {
+                                <MudText>@(dryRun ? "Preview Vacuum" : "Start Vacuum")</MudText>
+                            }
+                        </MudButton>
+                        
+                        <MudStack Row Spacing="2">
+                            <MudButton StartIcon="Icons.Material.Filled.Schedule"
+                                      Variant="Variant.Outlined"
+                                      OnClick="ScheduleVacuum"
+                                      Disabled="selectedTable == null">
+                                Schedule
+                            </MudButton>
+                            
+                            <MudButton StartIcon="Icons.Material.Filled.History"
+                                      Variant="Variant.Outlined"
+                                      OnClick="ViewVacuumHistory"
+                                      Disabled="selectedTable == null">
+                                History
+                            </MudButton>
+                        </MudStack>
+                    </MudStack>
+                    
+                    @if (vacuumProgress > 0)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Value="vacuumProgress" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@vacuumStatus</MudText>
+                    }
+                    
+                    @if (vacuumResult != null)
+                    {
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">
+                                        @(dryRun ? "Vacuum Preview Results" : "Vacuum Results")
+                                    </MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudGrid>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Error">@vacuumResult.FilesDeleted</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Files @(dryRun ? "to Delete" : "Deleted")</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Success">@((vacuumResult.SpaceReclaimed / 1024 / 1024).ToString("F1"))MB</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Space @(dryRun ? "to Reclaim" : "Reclaimed")</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Info">@vacuumResult.FilesScanned</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Files Scanned</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Warning">@vacuumResult.Duration.ToString(@"mm\:ss")</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Duration</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                </MudGrid>
+                                
+                                @if (vacuumResult.Warnings.Any())
+                                {
+                                    <MudDivider Class="my-3" />
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Warning">Warnings:</MudText>
+                                    @foreach (var warning in vacuumResult.Warnings)
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Warning">• @warning</MudText>
+                                    }
+                                }
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- File Details -->
+        @if (uncommittedFiles.Any())
+        {
+            <MudItem xs="12">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.h6">Uncommitted Files (@uncommittedFiles.Count)</MudText>
+                        
+                        <MudTable Items="uncommittedFiles" Dense="true" Hover="true" Striped="true" FixedHeader="true" Height="300px">
+                            <HeaderContent>
+                                <MudTh>File Path</MudTh>
+                                <MudTh>Size</MudTh>
+                                <MudTh>Age</MudTh>
+                                <MudTh>Last Modified</MudTh>
+                                <MudTh>Status</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <MudText Typo="Typo.body2" Style="font-family: monospace; font-size: 0.8em;">
+                                        @context.Path
+                                    </MudText>
+                                </MudTd>
+                                <MudTd>@((context.Size / 1024 / 1024).ToString("F1")) MB</MudTd>
+                                <MudTd>@context.AgeDays days</MudTd>
+                                <MudTd>@context.LastModified.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                                <MudTd>
+                                    @if (context.AgeDays >= retentionHours / 24.0)
+                                    {
+                                        <MudChip Color="Color.Error" Size="Size.Small">Will be deleted</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip Color="Color.Success" Size="Size.Small">Protected</MudChip>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        }
+
+        <!-- Vacuum History -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6">Recent Vacuum Operations</MudText>
+                        <MudButton StartIcon="Icons.Material.Filled.Clear"
+                                  Variant="Variant.Text"
+                                  Size="Size.Small"
+                                  OnClick="ClearHistory">
+                            Clear History
+                        </MudButton>
+                    </MudStack>
+                    
+                    @if (vacuumHistory.Any())
+                    {
+                        <MudTable Items="vacuumHistory" Dense="true" Hover="true" Striped="true">
+                            <HeaderContent>
+                                <MudTh>Table</MudTh>
+                                <MudTh>Type</MudTh>
+                                <MudTh>Files Deleted</MudTh>
+                                <MudTh>Space Reclaimed</MudTh>
+                                <MudTh>Retention</MudTh>
+                                <MudTh>Duration</MudTh>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Status</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.TableName</MudTd>
+                                <MudTd>
+                                    <MudChip Color="@(context.DryRun ? Color.Info : Color.Primary)" Size="Size.Small">
+                                        @(context.DryRun ? "Preview" : "Vacuum")
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd>@context.FilesDeleted</MudTd>
+                                <MudTd>@((context.SpaceReclaimed / 1024 / 1024).ToString("F1")) MB</MudTd>
+                                <MudTd>@context.RetentionHours h</MudTd>
+                                <MudTd>@context.Duration.ToString(@"mm\:ss")</MudTd>
+                                <MudTd>@context.Timestamp.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                                <MudTd>
+                                    @if (context.Success)
+                                    {
+                                        <MudIcon Icon="Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" />
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">No vacuum operations performed yet.</MudAlert>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private string? selectedTable;
+    private List<FileMetadata> deltaFiles = new();
+    private StorageAnalysisResult? storageAnalysis;
+    private bool isAnalyzing = false;
+    private bool isVacuuming = false;
+    private double vacuumProgress = 0;
+    private string vacuumStatus = string.Empty;
+    private VacuumResult? vacuumResult;
+    private int vacuumOpsRun = 0;
+
+    // Vacuum settings
+    private int retentionHours = 168; // 7 days
+    private bool dryRun = true;
+    private bool parallelVacuum = true;
+    private int parallelism = 4;
+    private bool skipHistoryCheck = false;
+    private VacuumMode vacuumMode = VacuumMode.Safe;
+
+    private List<UncommittedFile> uncommittedFiles = new();
+    private List<VacuumHistoryItem> vacuumHistory = new();
+
+    protected override void OnInitialized()
+    {
+        LoadDeltaFiles();
+        vacuumOpsRun = vacuumHistory.Count;
+    }
+
+    private void LoadDeltaFiles()
+    {
+        deltaFiles = AppState.LoadedFiles.Where(f => f.Format == FileFormat.Delta).ToList();
+        if (deltaFiles.Any())
+        {
+            selectedTable = deltaFiles.First().Id;
+        }
+    }
+
+    private async Task AnalyzeStorage()
+    {
+        if (selectedTable == null) return;
+
+        isAnalyzing = true;
+        
+        // Simulate analysis
+        await Task.Delay(1500);
+        
+        var uncommittedSize = Random.Shared.Next(50, 500) * 1024 * 1024; // 50MB - 500MB
+        var uncommittedCount = Random.Shared.Next(10, 100);
+        
+        storageAnalysis = new StorageAnalysisResult
+        {
+            TotalSize = Random.Shared.Next(1, 10) * 1024L * 1024 * 1024, // 1-10 GB
+            UncommittedSize = uncommittedSize,
+            UncommittedFiles = uncommittedCount,
+            DaysOldest = Random.Shared.Next(1, 30)
+        };
+        
+        // Generate uncommitted files
+        uncommittedFiles.Clear();
+        for (int i = 0; i < uncommittedCount; i++)
+        {
+            var ageInDays = Random.Shared.Next(1, 30);
+            uncommittedFiles.Add(new UncommittedFile
+            {
+                Path = $"delta-table/_delta_log/part-{i:D5}-{Guid.NewGuid():N}.parquet",
+                Size = Random.Shared.Next(1, 20) * 1024 * 1024,
+                AgeDays = ageInDays,
+                LastModified = DateTime.Now.AddDays(-ageInDays)
+            });
+        }
+        
+        isAnalyzing = false;
+        StateHasChanged();
+    }
+
+    private async Task StartVacuum()
+    {
+        if (selectedTable == null) return;
+
+        isVacuuming = true;
+        vacuumProgress = 0;
+        vacuumStatus = $"{(dryRun ? "Analyzing" : "Starting vacuum")}...";
+
+        try
+        {
+            var startTime = DateTime.Now;
+            var steps = new[]
+            {
+                "Scanning transaction log...",
+                "Identifying uncommitted files...",
+                "Checking retention policy...",
+                dryRun ? "Calculating impact..." : "Deleting files...",
+                "Updating metadata...",
+                "Finalizing operation..."
+            };
+
+            for (int i = 0; i < steps.Length; i++)
+            {
+                vacuumStatus = steps[i];
+                vacuumProgress = (i + 1) * 100.0 / steps.Length;
+                StateHasChanged();
+                await Task.Delay(Random.Shared.Next(500, 2000));
+            }
+
+            var filesToDelete = uncommittedFiles.Count(f => f.AgeDays >= retentionHours / 24.0);
+            var spaceToReclaim = uncommittedFiles.Where(f => f.AgeDays >= retentionHours / 24.0).Sum(f => f.Size);
+
+            vacuumResult = new VacuumResult
+            {
+                FilesDeleted = filesToDelete,
+                FilesScanned = uncommittedFiles.Count,
+                SpaceReclaimed = spaceToReclaim,
+                Duration = DateTime.Now - startTime,
+                Warnings = new List<string>()
+            };
+
+            if (retentionHours < 168)
+            {
+                vacuumResult.Warnings.Add("Retention period is less than 7 days. Some time travel queries may fail.");
+            }
+            if (skipHistoryCheck)
+            {
+                vacuumResult.Warnings.Add("History check was skipped. Ensure no critical versions are affected.");
+            }
+
+            var historyItem = new VacuumHistoryItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                TableName = deltaFiles.First(f => f.Id == selectedTable).FileName,
+                DryRun = dryRun,
+                FilesDeleted = vacuumResult.FilesDeleted,
+                SpaceReclaimed = vacuumResult.SpaceReclaimed,
+                RetentionHours = retentionHours,
+                Duration = vacuumResult.Duration,
+                Timestamp = DateTime.Now,
+                Success = true
+            };
+
+            vacuumHistory.Insert(0, historyItem);
+            vacuumOpsRun = vacuumHistory.Count;
+            vacuumStatus = $"{(dryRun ? "Preview" : "Vacuum")} completed successfully!";
+
+            await Task.Delay(3000);
+            vacuumProgress = 0;
+        }
+        finally
+        {
+            isVacuuming = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ScheduleVacuum()
+    {
+        // TODO: Show scheduling dialog
+        await Task.CompletedTask;
+    }
+
+    private async Task ViewVacuumHistory()
+    {
+        // TODO: Show detailed history dialog
+        await Task.CompletedTask;
+    }
+
+    private void ClearHistory()
+    {
+        vacuumHistory.Clear();
+        vacuumOpsRun = 0;
+        StateHasChanged();
+    }
+
+    public enum VacuumMode
+    {
+        Safe,
+        Aggressive,
+        Preview
+    }
+
+    public class StorageAnalysisResult
+    {
+        public long TotalSize { get; set; }
+        public long UncommittedSize { get; set; }
+        public int UncommittedFiles { get; set; }
+        public int DaysOldest { get; set; }
+    }
+
+    public class UncommittedFile
+    {
+        public string Path { get; set; } = string.Empty;
+        public long Size { get; set; }
+        public int AgeDays { get; set; }
+        public DateTime LastModified { get; set; }
+    }
+
+    public class VacuumResult
+    {
+        public int FilesDeleted { get; set; }
+        public int FilesScanned { get; set; }
+        public long SpaceReclaimed { get; set; }
+        public TimeSpan Duration { get; set; }
+        public List<string> Warnings { get; set; } = new();
+    }
+
+    public class VacuumHistoryItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string TableName { get; set; } = string.Empty;
+        public bool DryRun { get; set; }
+        public int FilesDeleted { get; set; }
+        public long SpaceReclaimed { get; set; }
+        public int RetentionHours { get; set; }
+        public TimeSpan Duration { get; set; }
+        public DateTime Timestamp { get; set; }
+        public bool Success { get; set; }
+    }
+}

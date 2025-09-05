@@ -1,0 +1,293 @@
+@page "/about"
+
+<PageTitle>About - Parquet & Delta Lake Tool</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-8" Elevation="2">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudIcon Icon="Icons.Material.Filled.Storage" Color="Color.Primary" Size="Size.Large" Style="font-size: 4rem;" />
+                    <MudText Typo="Typo.h2" Align="Align.Center">Parquet & Delta Lake Tool</MudText>
+                    <MudText Typo="Typo.h5" Align="Align.Center" Color="Color.Secondary">
+                        Your comprehensive data engineering toolkit for Parquet files and Delta Lake tables
+                    </MudText>
+                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                        Built with Blazor WebAssembly - Process data entirely in your browser with privacy and security
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Features Overview -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.h4" GutterBottom="true" Align="Align.Center" Class="mb-6">Core Features</MudText>
+            
+            <MudGrid>
+                <MudItem xs="12" md="6" lg="4">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 200px;">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Upload" Color="Color.Primary" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">File Processing</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Upload and process Parquet, CSV, and JSON files with drag & drop support
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6" lg="4">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 200px;">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.GridView" Color="Color.Info" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Data Viewer</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Interactive data grid with filtering, sorting, and virtual scrolling for large datasets
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6" lg="4">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 200px;">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Search" Color="Color.Success" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">SQL Query Engine</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Powerful SQL interface with query validation, history, and performance metrics
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6" lg="4">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 200px;">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Schema" Color="Color.Warning" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Schema Explorer</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Visual schema browser with tree view and detailed field information
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6" lg="4">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 200px;">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.BarChart" Color="Color.Error" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Statistics Dashboard</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Comprehensive data quality metrics and performance insights
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6" lg="4">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 200px;">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.ChangeHistory" Color="Color.Secondary" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Delta Lake Support</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Version history, time travel, and table optimization operations
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudItem>
+
+        <!-- Technology Stack -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h5" GutterBottom="true">Technology Stack</MudText>
+                
+                <MudList Dense="true">
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.Code" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.body1">Blazor WebAssembly</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Frontend framework (.NET 9)</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                    
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.Palette" Color="Color.Info" />
+                            <div>
+                                <MudText Typo="Typo.body1">MudBlazor</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Material Design components</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                    
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.Memory" Color="Color.Success" />
+                            <div>
+                                <MudText Typo="Typo.body1">WebAssembly (WASM)</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">High-performance data processing</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                    
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.Storage" Color="Color.Warning" />
+                            <div>
+                                <MudText Typo="Typo.body1">IndexedDB & OPFS</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Client-side storage</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Key Benefits -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h5" GutterBottom="true">Key Benefits</MudText>
+                
+                <MudList Dense="true">
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.Security" Color="Color.Success" />
+                            <div>
+                                <MudText Typo="Typo.body1">Privacy First</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">All processing happens in your browser</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                    
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.Speed" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.body1">High Performance</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">WebAssembly-powered processing</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                    
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.CloudOff" Color="Color.Info" />
+                            <div>
+                                <MudText Typo="Typo.body1">No Server Required</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Works entirely offline</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                    
+                    <MudListItem>
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="Icons.Material.Filled.DevicesOther" Color="Color.Warning" />
+                            <div>
+                                <MudText Typo="Typo.body1">Cross Platform</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Works on any modern browser</MudText>
+                            </div>
+                        </MudStack>
+                    </MudListItem>
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Version & Links -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText Typo="Typo.h6">Version Information</MudText>
+                    
+                    <MudGrid AlignItems="AlignItems.Center" Justify="Justify.Center">
+                        <MudItem xs="12" sm="4">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Application Version</MudText>
+                                <MudChip Color="Color.Primary">v1.0.0</MudChip>
+                            </MudStack>
+                        </MudItem>
+                        
+                        <MudItem xs="12" sm="4">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">.NET Version</MudText>
+                                <MudChip Color="Color.Info">9.0</MudChip>
+                            </MudStack>
+                        </MudItem>
+                        
+                        <MudItem xs="12" sm="4">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Build Date</MudText>
+                                <MudChip Color="Color.Secondary">@DateTime.Now.ToString("yyyy-MM-dd")</MudChip>
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider Class="my-4" />
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="4">
+                        <MudButton StartIcon="Icons.Custom.Brands.GitHub" 
+                                  Href="https://github.com/mjtpena/parquet" 
+                                  Target="_blank"
+                                  Variant="Variant.Outlined" 
+                                  Color="Color.Primary">
+                            View Source
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.BugReport" 
+                                  Href="https://github.com/mjtpena/parquet/issues" 
+                                  Target="_blank"
+                                  Variant="Variant.Outlined" 
+                                  Color="Color.Secondary">
+                            Report Issue
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.Help" 
+                                  Href="https://github.com/mjtpena/parquet/wiki" 
+                                  Target="_blank"
+                                  Variant="Variant.Outlined" 
+                                  Color="Color.Info">
+                            Documentation
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Acknowledgments -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" GutterBottom="true" Align="Align.Center">Acknowledgments</MudText>
+                
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-4">
+                    This project is built on the shoulders of giants. Special thanks to:
+                </MudText>
+                
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="6" FlexWrap="FlexWrap.Wrap">
+                    <MudLink Href="https://parquet.apache.org/" Target="_blank" Underline="Underline.Hover">
+                        <MudText Typo="Typo.body2">Apache Parquet</MudText>
+                    </MudLink>
+                    
+                    <MudLink Href="https://delta.io/" Target="_blank" Underline="Underline.Hover">
+                        <MudText Typo="Typo.body2">Delta Lake</MudText>
+                    </MudLink>
+                    
+                    <MudLink Href="https://mudblazor.com/" Target="_blank" Underline="Underline.Hover">
+                        <MudText Typo="Typo.body2">MudBlazor</MudText>
+                    </MudLink>
+                    
+                    <MudLink Href="https://duckdb.org/" Target="_blank" Underline="Underline.Hover">
+                        <MudText Typo="Typo.body2">DuckDB</MudText>
+                    </MudLink>
+                    
+                    <MudLink Href="https://arrow.apache.org/" Target="_blank" Underline="Underline.Hover">
+                        <MudText Typo="Typo.body2">Apache Arrow</MudText>
+                    </MudLink>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>

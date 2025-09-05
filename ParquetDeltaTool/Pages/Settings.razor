@@ -1,0 +1,555 @@
+@page "/settings"
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Services
+@inject ApplicationState AppState
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Settings - Parquet & Delta Lake Tool</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-6" Elevation="2">
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+                    <MudIcon Icon="Icons.Material.Filled.Settings" Size="Size.Large" Color="Color.Primary" />
+                    <MudStack>
+                        <MudText Typo="Typo.h4">Settings</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Secondary">
+                            Configure your application preferences and data processing options
+                        </MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- General Settings -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">General Settings</MudText>
+                    
+                    <MudSelect @bind-Value="settings.Theme" Label="Theme" Variant="Variant.Outlined" Dense="true">
+                        <MudSelectItem Value="AppTheme.Light">Light</MudSelectItem>
+                        <MudSelectItem Value="AppTheme.Dark">Dark</MudSelectItem>
+                        <MudSelectItem Value="AppTheme.Auto">Auto (System)</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudSelect @bind-Value="settings.Language" Label="Language" Variant="Variant.Outlined" Dense="true">
+                        <MudSelectItem Value="Language.English">English</MudSelectItem>
+                        <MudSelectItem Value="Language.Spanish">Español</MudSelectItem>
+                        <MudSelectItem Value="Language.French">Français</MudSelectItem>
+                        <MudSelectItem Value="Language.German">Deutsch</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudNumericField @bind-Value="settings.MaxRecentFiles" 
+                                   Label="Max recent files" 
+                                   Variant="Variant.Outlined" 
+                                   Min="5" 
+                                   Max="100" 
+                                   HelperText="Maximum number of recent files to remember" />
+                    
+                    <MudSwitch @bind-Checked="settings.ShowWelcomeScreen" 
+                             Label="Show welcome screen on startup" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="settings.AutoSaveSettings" 
+                             Label="Auto-save settings" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="settings.EnableAnalytics" 
+                             Label="Enable usage analytics" 
+                             Color="Color.Primary" />
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Data Processing Settings -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Data Processing</MudText>
+                    
+                    <MudNumericField @bind-Value="settings.DefaultPageSize" 
+                                   Label="Default page size" 
+                                   Variant="Variant.Outlined" 
+                                   Min="10" 
+                                   Max="10000" 
+                                   HelperText="Number of rows to display per page" />
+                    
+                    <MudNumericField @bind-Value="settings.MaxMemoryUsageMB" 
+                                   Label="Max memory usage (MB)" 
+                                   Variant="Variant.Outlined" 
+                                   Min="100" 
+                                   Max="4096" 
+                                   HelperText="Maximum memory for data processing" />
+                    
+                    <MudNumericField @bind-Value="settings.QueryTimeoutSeconds" 
+                                   Label="Query timeout (seconds)" 
+                                   Variant="Variant.Outlined" 
+                                   Min="10" 
+                                   Max="300" 
+                                   HelperText="Maximum time to wait for query completion" />
+                    
+                    <MudSelect @bind-Value="settings.DefaultCompression" 
+                             Label="Default compression" 
+                             Variant="Variant.Outlined">
+                        <MudSelectItem Value="CompressionType.Snappy">SNAPPY (Fast)</MudSelectItem>
+                        <MudSelectItem Value="CompressionType.Gzip">GZIP (Balanced)</MudSelectItem>
+                        <MudSelectItem Value="CompressionType.Lz4">LZ4 (Fastest)</MudSelectItem>
+                        <MudSelectItem Value="CompressionType.Zstd">ZSTD (Best)</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudSwitch @bind-Checked="settings.EnableVirtualScrolling" 
+                             Label="Enable virtual scrolling" 
+                             Color="Color.Primary" 
+                             HelperText="Improves performance with large datasets" />
+                    
+                    <MudSwitch @bind-Checked="settings.CacheQueryResults" 
+                             Label="Cache query results" 
+                             Color="Color.Primary" 
+                             HelperText="Cache frequently used query results for faster access" />
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- File Upload Settings -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">File Upload & Storage</MudText>
+                    
+                    <MudNumericField @bind-Value="settings.MaxFileSizeMB" 
+                                   Label="Max file size (MB)" 
+                                   Variant="Variant.Outlined" 
+                                   Min="1" 
+                                   Max="2048" 
+                                   HelperText="Maximum size for uploaded files" />
+                    
+                    <MudNumericField @bind-Value="settings.MaxConcurrentUploads" 
+                                   Label="Max concurrent uploads" 
+                                   Variant="Variant.Outlined" 
+                                   Min="1" 
+                                   Max="10" 
+                                   HelperText="Maximum number of simultaneous file uploads" />
+                    
+                    <MudSelect @bind-Value="settings.StorageProvider" 
+                             Label="Storage provider" 
+                             Variant="Variant.Outlined">
+                        <MudSelectItem Value="StorageProvider.IndexedDB">IndexedDB (Browser)</MudSelectItem>
+                        <MudSelectItem Value="StorageProvider.OPFS">OPFS (Origin Private)</MudSelectItem>
+                        <MudSelectItem Value="StorageProvider.Memory">Memory (Temporary)</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudNumericField @bind-Value="settings.StorageQuotaGB" 
+                                   Label="Storage quota (GB)" 
+                                   Variant="Variant.Outlined" 
+                                   Min="1" 
+                                   Max="20" 
+                                   HelperText="Maximum storage space to use" />
+                    
+                    <MudSwitch @bind-Checked="settings.AutoDeleteOldFiles" 
+                             Label="Auto-delete old files" 
+                             Color="Color.Primary" />
+                    
+                    @if (settings.AutoDeleteOldFiles)
+                    {
+                        <MudNumericField @bind-Value="settings.FileRetentionDays" 
+                                       Label="File retention (days)" 
+                                       Variant="Variant.Outlined" 
+                                       Min="1" 
+                                       Max="365" />
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Query Engine Settings -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Query Engine</MudText>
+                    
+                    <MudSelect @bind-Value="settings.SqlDialect" 
+                             Label="SQL dialect" 
+                             Variant="Variant.Outlined">
+                        <MudSelectItem Value="SqlDialect.DuckDB">DuckDB (Recommended)</MudSelectItem>
+                        <MudSelectItem Value="SqlDialect.PostgreSQL">PostgreSQL</MudSelectItem>
+                        <MudSelectItem Value="SqlDialect.ANSI">ANSI SQL</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudNumericField @bind-Value="settings.MaxQueryHistoryItems" 
+                                   Label="Max query history" 
+                                   Variant="Variant.Outlined" 
+                                   Min="10" 
+                                   Max="1000" 
+                                   HelperText="Maximum number of queries to remember" />
+                    
+                    <MudSwitch @bind-Checked="settings.EnableSyntaxHighlighting" 
+                             Label="Enable syntax highlighting" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="settings.EnableAutoComplete" 
+                             Label="Enable auto-complete" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="settings.ShowQueryPlan" 
+                             Label="Show query execution plans" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="settings.EnableQueryValidation" 
+                             Label="Enable query validation" 
+                             Color="Color.Primary" />
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Data Visualization Settings -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Data Visualization</MudText>
+                    
+                    <MudSelect @bind-Value="settings.DefaultChartType" 
+                             Label="Default chart type" 
+                             Variant="Variant.Outlined">
+                        <MudSelectItem Value="ChartType.Bar">Bar Chart</MudSelectItem>
+                        <MudSelectItem Value="ChartType.Line">Line Chart</MudSelectItem>
+                        <MudSelectItem Value="ChartType.Pie">Pie Chart</MudSelectItem>
+                        <MudSelectItem Value="ChartType.Scatter">Scatter Plot</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudTextField @bind-Value="settings.PrimaryChartColor" 
+                                Label="Primary chart color" 
+                                Variant="Variant.Outlined" 
+                                HelperText="Hex color code (e.g., #1976d2)" />
+                    
+                    <MudNumericField @bind-Value="settings.MaxChartDataPoints" 
+                                   Label="Max chart data points" 
+                                   Variant="Variant.Outlined" 
+                                   Min="100" 
+                                   Max="10000" 
+                                   HelperText="Maximum data points to display in charts" />
+                    
+                    <MudSwitch @bind-Checked="settings.EnableInteractiveCharts" 
+                             Label="Enable interactive charts" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="settings.ShowDataLabels" 
+                             Label="Show data labels on charts" 
+                             Color="Color.Primary" />
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Export Settings -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Export Settings</MudText>
+                    
+                    <MudSelect @bind-Value="settings.DefaultExportFormat" 
+                             Label="Default export format" 
+                             Variant="Variant.Outlined">
+                        <MudSelectItem Value="ExportFormat.CSV">CSV</MudSelectItem>
+                        <MudSelectItem Value="ExportFormat.JSON">JSON</MudSelectItem>
+                        <MudSelectItem Value="ExportFormat.Parquet">Parquet</MudSelectItem>
+                        <MudSelectItem Value="ExportFormat.Excel">Excel</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudTextField @bind-Value="settings.CsvDelimiter" 
+                                Label="CSV delimiter" 
+                                Variant="Variant.Outlined" 
+                                MaxLength="1" />
+                    
+                    <MudSwitch @bind-Checked="settings.ExportWithHeaders" 
+                             Label="Export with column headers" 
+                             Color="Color.Primary" />
+                    
+                    <MudSwitch @bind-Checked="settings.CompressExports" 
+                             Label="Compress exported files" 
+                             Color="Color.Primary" />
+                    
+                    <MudNumericField @bind-Value="settings.ExportBatchSize" 
+                                   Label="Export batch size" 
+                                   Variant="Variant.Outlined" 
+                                   Min="1000" 
+                                   Max="100000" 
+                                   HelperText="Number of rows to process per batch" />
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Actions -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.Save"
+                                  Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  OnClick="SaveSettings">
+                            Save Settings
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.Refresh"
+                                  Variant="Variant.Outlined"
+                                  OnClick="ResetToDefaults">
+                            Reset to Defaults
+                        </MudButton>
+                    </MudStack>
+                    
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.Download"
+                                  Variant="Variant.Outlined"
+                                  OnClick="ExportSettings">
+                            Export Settings
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.Upload"
+                                  Variant="Variant.Outlined"
+                                  OnClick="ImportSettings">
+                            Import Settings
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+                
+                @if (!string.IsNullOrEmpty(saveStatus))
+                {
+                    <MudAlert Severity="@(saveSuccess ? Severity.Success : Severity.Error)" Class="mt-3">
+                        @saveStatus
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- Storage Usage -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Storage Usage</MudText>
+                    
+                    <MudGrid>
+                        <MudItem xs="12" sm="3">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6" Color="Color.Primary">@storageUsage.FilesStored</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Files Stored</MudText>
+                            </MudStack>
+                        </MudItem>
+                        <MudItem xs="12" sm="3">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6" Color="Color.Info">@((storageUsage.UsedSpaceBytes / 1024.0 / 1024 / 1024).ToString("F2")) GB</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Used Space</MudText>
+                            </MudStack>
+                        </MudItem>
+                        <MudItem xs="12" sm="3">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6" Color="Color.Success">@((storageUsage.AvailableSpaceBytes / 1024.0 / 1024 / 1024).ToString("F2")) GB</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Available Space</MudText>
+                            </MudStack>
+                        </MudItem>
+                        <MudItem xs="12" sm="3">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6" Color="Color.Warning">@storageUsage.CacheHitRate%</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Cache Hit Rate</MudText>
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+                    
+                    <MudProgressLinear Value="@storageUsage.UsagePercentage" Color="@GetStorageColor()" />
+                    
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.CleaningServices"
+                                  Variant="Variant.Outlined"
+                                  OnClick="ClearCache">
+                            Clear Cache
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.DeleteSweep"
+                                  Variant="Variant.Outlined"
+                                  Color="Color.Warning"
+                                  OnClick="ClearAllData">
+                            Clear All Data
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.Refresh"
+                                  Variant="Variant.Text"
+                                  OnClick="RefreshStorageUsage">
+                            Refresh
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private AppSettings settings = new();
+    private StorageUsage storageUsage = new();
+    private string saveStatus = string.Empty;
+    private bool saveSuccess = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettings();
+        await RefreshStorageUsage();
+    }
+
+    private async Task LoadSettings()
+    {
+        // TODO: Load settings from local storage
+        settings = new AppSettings(); // Default settings for now
+        await Task.CompletedTask;
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            // TODO: Save settings to local storage
+            await Task.Delay(500); // Simulate save operation
+            
+            saveStatus = "Settings saved successfully!";
+            saveSuccess = true;
+            
+            // Clear status after 3 seconds
+            await Task.Delay(3000);
+            saveStatus = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            saveStatus = $"Failed to save settings: {ex.Message}";
+            saveSuccess = false;
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task ResetToDefaults()
+    {
+        settings = new AppSettings();
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+
+    private async Task ExportSettings()
+    {
+        // TODO: Export settings to JSON file
+        await Task.CompletedTask;
+    }
+
+    private async Task ImportSettings()
+    {
+        // TODO: Import settings from JSON file
+        await Task.CompletedTask;
+    }
+
+    private async Task RefreshStorageUsage()
+    {
+        // TODO: Get actual storage usage from browser
+        storageUsage = new StorageUsage
+        {
+            FilesStored = AppState.LoadedFiles.Count,
+            UsedSpaceBytes = Random.Shared.Next(100, 1000) * 1024 * 1024, // 100MB - 1GB
+            AvailableSpaceBytes = Random.Shared.Next(5, 15) * 1024L * 1024 * 1024, // 5-15 GB
+            CacheHitRate = Random.Shared.Next(60, 95)
+        };
+        
+        storageUsage.UsagePercentage = (storageUsage.UsedSpaceBytes / (double)(storageUsage.UsedSpaceBytes + storageUsage.AvailableSpaceBytes)) * 100;
+        
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+
+    private async Task ClearCache()
+    {
+        // TODO: Clear application cache
+        await Task.Delay(1000);
+        await RefreshStorageUsage();
+    }
+
+    private async Task ClearAllData()
+    {
+        // TODO: Clear all stored data
+        await Task.Delay(1000);
+        AppState.LoadedFiles.Clear();
+        await RefreshStorageUsage();
+    }
+
+    private Color GetStorageColor()
+    {
+        return storageUsage.UsagePercentage switch
+        {
+            > 90 => Color.Error,
+            > 75 => Color.Warning,
+            > 50 => Color.Info,
+            _ => Color.Success
+        };
+    }
+
+    public class AppSettings
+    {
+        // General
+        public AppTheme Theme { get; set; } = AppTheme.Auto;
+        public Language Language { get; set; } = Language.English;
+        public int MaxRecentFiles { get; set; } = 20;
+        public bool ShowWelcomeScreen { get; set; } = true;
+        public bool AutoSaveSettings { get; set; } = true;
+        public bool EnableAnalytics { get; set; } = false;
+
+        // Data Processing
+        public int DefaultPageSize { get; set; } = 100;
+        public int MaxMemoryUsageMB { get; set; } = 1024;
+        public int QueryTimeoutSeconds { get; set; } = 60;
+        public CompressionType DefaultCompression { get; set; } = CompressionType.Snappy;
+        public bool EnableVirtualScrolling { get; set; } = true;
+        public bool CacheQueryResults { get; set; } = true;
+
+        // File Upload
+        public int MaxFileSizeMB { get; set; } = 512;
+        public int MaxConcurrentUploads { get; set; } = 3;
+        public StorageProvider StorageProvider { get; set; } = StorageProvider.IndexedDB;
+        public int StorageQuotaGB { get; set; } = 5;
+        public bool AutoDeleteOldFiles { get; set; } = false;
+        public int FileRetentionDays { get; set; } = 30;
+
+        // Query Engine
+        public SqlDialect SqlDialect { get; set; } = SqlDialect.DuckDB;
+        public int MaxQueryHistoryItems { get; set; } = 100;
+        public bool EnableSyntaxHighlighting { get; set; } = true;
+        public bool EnableAutoComplete { get; set; } = true;
+        public bool ShowQueryPlan { get; set; } = false;
+        public bool EnableQueryValidation { get; set; } = true;
+
+        // Visualization
+        public ChartType DefaultChartType { get; set; } = ChartType.Bar;
+        public string PrimaryChartColor { get; set; } = "#1976d2";
+        public int MaxChartDataPoints { get; set; } = 1000;
+        public bool EnableInteractiveCharts { get; set; } = true;
+        public bool ShowDataLabels { get; set; } = false;
+
+        // Export
+        public ExportFormat DefaultExportFormat { get; set; } = ExportFormat.CSV;
+        public string CsvDelimiter { get; set; } = ",";
+        public bool ExportWithHeaders { get; set; } = true;
+        public bool CompressExports { get; set; } = false;
+        public int ExportBatchSize { get; set; } = 10000;
+    }
+
+    public class StorageUsage
+    {
+        public int FilesStored { get; set; }
+        public long UsedSpaceBytes { get; set; }
+        public long AvailableSpaceBytes { get; set; }
+        public int CacheHitRate { get; set; }
+        public double UsagePercentage { get; set; }
+    }
+
+    public enum AppTheme { Light, Dark, Auto }
+    public enum Language { English, Spanish, French, German }
+    public enum StorageProvider { IndexedDB, OPFS, Memory }
+    public enum SqlDialect { DuckDB, PostgreSQL, ANSI }
+    public enum ChartType { Bar, Line, Pie, Scatter }
+    public enum ExportFormat { CSV, JSON, Parquet, Excel }
+}

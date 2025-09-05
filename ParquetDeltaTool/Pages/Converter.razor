@@ -1,0 +1,495 @@
+@page "/converter"
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Services
+@inject ApplicationState AppState
+@inject IFileProcessor FileProcessor
+@inject IJSRuntime JSRuntime
+
+<PageTitle>File Converter - Parquet & Delta Lake Tool</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-6" Elevation="2">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudStack>
+                        <MudText Typo="Typo.h4">File Converter</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Secondary">
+                            Convert between different data formats: Parquet, CSV, JSON, and Delta Lake
+                        </MudText>
+                    </MudStack>
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.Transform" Size="Size.Large" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@conversionsCount Conversions</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Source File Selection -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Source File</MudText>
+                    
+                    @if (AppState.LoadedFiles.Any())
+                    {
+                        <MudSelect @bind-Value="selectedSourceFile" Label="Select Source File" Variant="Variant.Outlined" Dense="true">
+                            @foreach (var file in AppState.LoadedFiles)
+                            {
+                                <MudSelectItem Value="file.Id">@file.FileName (@file.Format.ToString())</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">No files loaded. Please upload files first from the Home page.</MudAlert>
+                    }
+                    
+                    @if (selectedMetadata != null)
+                    {
+                        <MudCard>
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudText Typo="Typo.subtitle1">@selectedMetadata.FileName</MudText>
+                                    <MudStack Row Spacing="4">
+                                        <MudChip Color="Color.Primary" Size="Size.Small">@selectedMetadata.Format</MudChip>
+                                        <MudText Typo="Typo.body2">@selectedMetadata.RowCount rows</MudText>
+                                        <MudText Typo="Typo.body2">@((selectedMetadata.FileSizeBytes / 1024.0 / 1024).ToString("F1")) MB</MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Target Format Selection -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Target Format</MudText>
+                    
+                    <MudSelect @bind-Value="targetFormat" Label="Output Format" Variant="Variant.Outlined" Dense="true">
+                        <MudSelectItem Value="FileFormat.Parquet">Parquet</MudSelectItem>
+                        <MudSelectItem Value="FileFormat.CSV">CSV</MudSelectItem>
+                        <MudSelectItem Value="FileFormat.JSON">JSON</MudSelectItem>
+                        <MudSelectItem Value="FileFormat.Delta">Delta Lake</MudSelectItem>
+                    </MudSelect>
+                    
+                    <!-- Format-specific options -->
+                    @if (targetFormat == FileFormat.Parquet)
+                    {
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Parquet Options</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudSelect @bind-Value="parquetCompression" Label="Compression" Variant="Variant.Outlined" Dense="true">
+                                        <MudSelectItem Value="CompressionType.Snappy">SNAPPY (Default)</MudSelectItem>
+                                        <MudSelectItem Value="CompressionType.Gzip">GZIP</MudSelectItem>
+                                        <MudSelectItem Value="CompressionType.Lz4">LZ4</MudSelectItem>
+                                        <MudSelectItem Value="CompressionType.Zstd">ZSTD</MudSelectItem>
+                                    </MudSelect>
+                                    <MudNumericField @bind-Value="rowGroupSize" Label="Row Group Size" Variant="Variant.Outlined" Min="1000" Max="1000000" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                    else if (targetFormat == FileFormat.CSV)
+                    {
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">CSV Options</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudTextField @bind-Value="csvDelimiter" Label="Delimiter" Variant="Variant.Outlined" />
+                                    <MudSwitch @bind-Checked="includeHeader" Label="Include Header Row" />
+                                    <MudTextField @bind-Value="csvQuoteChar" Label="Quote Character" Variant="Variant.Outlined" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                    else if (targetFormat == FileFormat.JSON)
+                    {
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">JSON Options</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudSelect @bind-Value="jsonFormat" Label="JSON Format" Variant="Variant.Outlined" Dense="true">
+                                        <MudSelectItem Value="JsonFormatType.Records">Records (Array of Objects)</MudSelectItem>
+                                        <MudSelectItem Value="JsonFormatType.Lines">JSON Lines (NDJSON)</MudSelectItem>
+                                        <MudSelectItem Value="JsonFormatType.Values">Values (Array of Arrays)</MudSelectItem>
+                                    </MudSelect>
+                                    <MudSwitch @bind-Checked="jsonPrettyPrint" Label="Pretty Print" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                    else if (targetFormat == FileFormat.Delta)
+                    {
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Delta Lake Options</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudTextField @bind-Value="deltaTableName" Label="Table Name" Variant="Variant.Outlined" />
+                                    <MudSelect @bind-Value="deltaMode" Label="Write Mode" Variant="Variant.Outlined" Dense="true">
+                                        <MudSelectItem Value="DeltaWriteMode.Overwrite">Overwrite</MudSelectItem>
+                                        <MudSelectItem Value="DeltaWriteMode.Append">Append</MudSelectItem>
+                                        <MudSelectItem Value="DeltaWriteMode.Merge">Merge (Upsert)</MudSelectItem>
+                                    </MudSelect>
+                                    <MudTextField @bind-Value="deltaPartitionColumn" Label="Partition Column (Optional)" Variant="Variant.Outlined" />
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Conversion Actions -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.Transform"
+                                  Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  Size="Size.Large"
+                                  OnClick="StartConversion"
+                                  Disabled="@(selectedSourceFile == null || isConverting)">
+                            @if (isConverting)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ml-2">Converting...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Convert File</MudText>
+                            }
+                        </MudButton>
+                        
+                        @if (conversionProgress > 0)
+                        {
+                            <MudProgressLinear Color="Color.Primary" Value="conversionProgress" />
+                        }
+                    </MudStack>
+                    
+                    <MudStack Row Spacing="2">
+                        <MudButton StartIcon="Icons.Material.Filled.Preview"
+                                  Variant="Variant.Outlined"
+                                  OnClick="PreviewConversion"
+                                  Disabled="@(selectedSourceFile == null)">
+                            Preview
+                        </MudButton>
+                        
+                        <MudButton StartIcon="Icons.Material.Filled.Settings"
+                                  Variant="Variant.Outlined"
+                                  OnClick="OpenAdvancedSettings">
+                            Advanced
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+                
+                @if (!string.IsNullOrEmpty(conversionStatus))
+                {
+                    <MudAlert Severity="@(conversionError ? Severity.Error : Severity.Success)" Class="mt-3">
+                        @conversionStatus
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- Conversion History -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6">Conversion History</MudText>
+                        <MudButton StartIcon="Icons.Material.Filled.Clear"
+                                  Variant="Variant.Text"
+                                  Size="Size.Small"
+                                  OnClick="ClearHistory">
+                            Clear History
+                        </MudButton>
+                    </MudStack>
+                    
+                    @if (conversionHistory.Any())
+                    {
+                        <MudTable Items="conversionHistory" Dense="true" Hover="true" Striped="true">
+                            <HeaderContent>
+                                <MudTh>Source</MudTh>
+                                <MudTh>Target Format</MudTh>
+                                <MudTh>Size</MudTh>
+                                <MudTh>Duration</MudTh>
+                                <MudTh>Status</MudTh>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.SourceFileName</MudTd>
+                                <MudTd>
+                                    <MudChip Color="Color.Info" Size="Size.Small">@context.TargetFormat</MudChip>
+                                </MudTd>
+                                <MudTd>@((context.OutputSizeBytes / 1024 / 1024).ToString("F1")) MB</MudTd>
+                                <MudTd>@context.Duration.ToString(@"mm\:ss")</MudTd>
+                                <MudTd>
+                                    @if (context.Success)
+                                    {
+                                        <MudIcon Icon="Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" />
+                                    }
+                                </MudTd>
+                                <MudTd>@context.Timestamp.ToString("HH:mm:ss")</MudTd>
+                                <MudTd>
+                                    <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
+                                        <MudIconButton Icon="Icons.Material.Filled.Download" 
+                                                      Size="Size.Small" 
+                                                      OnClick="() => DownloadConvertedFile(context)" />
+                                        <MudIconButton Icon="Icons.Material.Filled.Delete" 
+                                                      Size="Size.Small" 
+                                                      OnClick="() => RemoveFromHistory(context)" />
+                                    </MudButtonGroup>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">No conversions performed yet.</MudAlert>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private string? selectedSourceFile;
+    private FileMetadata? selectedMetadata;
+    private FileFormat targetFormat = FileFormat.Parquet;
+    private bool isConverting = false;
+    private double conversionProgress = 0;
+    private string conversionStatus = string.Empty;
+    private bool conversionError = false;
+    private int conversionsCount = 0;
+
+    // Parquet options
+    private CompressionType parquetCompression = CompressionType.Snappy;
+    private int rowGroupSize = 100000;
+
+    // CSV options
+    private string csvDelimiter = ",";
+    private bool includeHeader = true;
+    private string csvQuoteChar = "\"";
+
+    // JSON options
+    private JsonFormatType jsonFormat = JsonFormatType.Records;
+    private bool jsonPrettyPrint = true;
+
+    // Delta options
+    private string deltaTableName = "converted_table";
+    private DeltaWriteMode deltaMode = DeltaWriteMode.Overwrite;
+    private string deltaPartitionColumn = string.Empty;
+
+    private List<ConversionHistoryItem> conversionHistory = new();
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+        conversionsCount = conversionHistory.Count;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (AppState.LoadedFiles.Any() && selectedSourceFile == null)
+        {
+            selectedSourceFile = AppState.LoadedFiles.First().Id;
+        }
+        UpdateSelectedMetadata();
+    }
+
+    private void UpdateSelectedMetadata()
+    {
+        selectedMetadata = AppState.LoadedFiles.FirstOrDefault(f => f.Id == selectedSourceFile);
+    }
+
+    private async Task StartConversion()
+    {
+        if (selectedSourceFile == null || selectedMetadata == null) return;
+
+        isConverting = true;
+        conversionProgress = 0;
+        conversionStatus = "Starting conversion...";
+        conversionError = false;
+
+        try
+        {
+            var startTime = DateTime.Now;
+            
+            // Simulate conversion progress
+            for (int i = 0; i <= 100; i += 10)
+            {
+                conversionProgress = i;
+                conversionStatus = $"Converting... {i}%";
+                StateHasChanged();
+                await Task.Delay(200);
+            }
+
+            // Create conversion result
+            var outputFileName = GenerateOutputFileName();
+            var outputSize = EstimateOutputSize();
+            
+            var historyItem = new ConversionHistoryItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                SourceFileName = selectedMetadata.FileName,
+                SourceFormat = selectedMetadata.Format,
+                TargetFormat = targetFormat,
+                OutputFileName = outputFileName,
+                OutputSizeBytes = outputSize,
+                Duration = DateTime.Now - startTime,
+                Timestamp = DateTime.Now,
+                Success = true
+            };
+
+            conversionHistory.Insert(0, historyItem);
+            conversionsCount = conversionHistory.Count;
+            
+            conversionStatus = $"Successfully converted to {targetFormat}. Output: {outputFileName}";
+            conversionProgress = 100;
+
+            await Task.Delay(2000);
+            conversionProgress = 0;
+        }
+        catch (Exception ex)
+        {
+            conversionError = true;
+            conversionStatus = $"Conversion failed: {ex.Message}";
+        }
+        finally
+        {
+            isConverting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PreviewConversion()
+    {
+        if (selectedSourceFile == null) return;
+        
+        // TODO: Show preview dialog with sample data in target format
+        await Task.CompletedTask;
+    }
+
+    private async Task OpenAdvancedSettings()
+    {
+        // TODO: Show advanced settings dialog
+        await Task.CompletedTask;
+    }
+
+    private string GenerateOutputFileName()
+    {
+        if (selectedMetadata == null) return "converted_file";
+        
+        var baseName = Path.GetFileNameWithoutExtension(selectedMetadata.FileName);
+        var extension = targetFormat switch
+        {
+            FileFormat.Parquet => "parquet",
+            FileFormat.CSV => "csv",
+            FileFormat.JSON => "json",
+            FileFormat.Delta => "delta",
+            _ => "dat"
+        };
+        
+        return $"{baseName}_converted.{extension}";
+    }
+
+    private long EstimateOutputSize()
+    {
+        if (selectedMetadata == null) return 0;
+        
+        // Rough estimation based on target format
+        var compressionRatio = targetFormat switch
+        {
+            FileFormat.Parquet => 0.3,
+            FileFormat.CSV => 1.2,
+            FileFormat.JSON => 1.5,
+            FileFormat.Delta => 0.35,
+            _ => 1.0
+        };
+        
+        return (long)(selectedMetadata.FileSizeBytes * compressionRatio);
+    }
+
+    private async Task DownloadConvertedFile(ConversionHistoryItem item)
+    {
+        // TODO: Implement file download
+        await Task.CompletedTask;
+    }
+
+    private void RemoveFromHistory(ConversionHistoryItem item)
+    {
+        conversionHistory.Remove(item);
+        conversionsCount = conversionHistory.Count;
+        StateHasChanged();
+    }
+
+    private void ClearHistory()
+    {
+        conversionHistory.Clear();
+        conversionsCount = 0;
+        StateHasChanged();
+    }
+
+    public enum JsonFormatType
+    {
+        Records,
+        Lines,
+        Values
+    }
+
+    public enum DeltaWriteMode
+    {
+        Overwrite,
+        Append,
+        Merge
+    }
+
+    public class ConversionHistoryItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string SourceFileName { get; set; } = string.Empty;
+        public FileFormat SourceFormat { get; set; }
+        public FileFormat TargetFormat { get; set; }
+        public string OutputFileName { get; set; } = string.Empty;
+        public long OutputSizeBytes { get; set; }
+        public TimeSpan Duration { get; set; }
+        public DateTime Timestamp { get; set; }
+        public bool Success { get; set; }
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

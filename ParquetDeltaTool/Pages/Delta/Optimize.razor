@@ -1,0 +1,566 @@
+@page "/delta/optimize"
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Services
+@inject ApplicationState AppState
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Delta Optimize - Parquet & Delta Lake Tool</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-6" Elevation="2">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudStack>
+                        <MudText Typo="Typo.h4">Delta Lake Optimization</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Secondary">
+                            Optimize table layout, compact files, and improve query performance
+                        </MudText>
+                    </MudStack>
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.Speed" Size="Size.Large" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@optimizationsRun Optimizations</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Table Selection & Analysis -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Table Analysis</MudText>
+                    
+                    @if (deltaFiles.Any())
+                    {
+                        <MudSelect @bind-Value="selectedTable" Label="Select Delta Table" Variant="Variant.Outlined" Dense="true">
+                            @foreach (var file in deltaFiles)
+                            {
+                                <MudSelectItem Value="file.Id">@file.FileName</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            No Delta Lake tables loaded. Please load Delta tables from the Home page.
+                        </MudAlert>
+                    }
+                    
+                    @if (tableAnalysis != null)
+                    {
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Current State</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudSimpleTable Dense="true">
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Total Files</strong></td>
+                                            <td>@tableAnalysis.TotalFiles</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Small Files</strong></td>
+                                            <td>
+                                                <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudText>@tableAnalysis.SmallFiles</MudText>
+                                                    @if (tableAnalysis.SmallFiles > 0)
+                                                    {
+                                                        <MudIcon Icon="Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" />
+                                                    }
+                                                </MudStack>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Average File Size</strong></td>
+                                            <td>@((tableAnalysis.AverageFileSizeBytes / 1024 / 1024).ToString("F1")) MB</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Data Skipping</strong></td>
+                                            <td>
+                                                @if (tableAnalysis.HasDataSkipping)
+                                                {
+                                                    <MudChip Color="Color.Success" Size="Size.Small">Enabled</MudChip>
+                                                }
+                                                else
+                                                {
+                                                    <MudChip Color="Color.Warning" Size="Size.Small">Disabled</MudChip>
+                                                }
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Last Optimized</strong></td>
+                                            <td>
+                                                @if (tableAnalysis.LastOptimized.HasValue)
+                                                {
+                                                    @tableAnalysis.LastOptimized.Value.ToString("yyyy-MM-dd HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <MudText Color="Color.Secondary">Never</MudText>
+                                                }
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </MudSimpleTable>
+                            </MudCardContent>
+                        </MudCard>
+                        
+                        <MudAlert Severity="@GetRecommendationSeverity()" Class="mt-3">
+                            <MudText Typo="Typo.body2"><strong>Recommendation:</strong> @GetOptimizationRecommendation()</MudText>
+                        </MudAlert>
+                    }
+                    
+                    <MudButton StartIcon="Icons.Material.Filled.Analytics"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              OnClick="AnalyzeTable"
+                              Disabled="selectedTable == null || isAnalyzing">
+                        @if (isAnalyzing)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ml-2">Analyzing...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Analyze Table</MudText>
+                        }
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Optimization Options -->
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Optimization Settings</MudText>
+                    
+                    <MudExpansionPanels Elevation="0" Outlined="true">
+                        <MudExpansionPanel Text="File Compaction" IsExpanded="true">
+                            <MudStack Spacing="2">
+                                <MudSwitch @bind-Checked="enableFileCompaction" 
+                                         Label="Enable file compaction" 
+                                         Color="Color.Primary" />
+                                
+                                <MudNumericField @bind-Value="targetFileSizeMB" 
+                                               Label="Target file size (MB)" 
+                                               Variant="Variant.Outlined" 
+                                               Min="1" 
+                                               Max="1024"
+                                               Disabled="!enableFileCompaction" />
+                                
+                                <MudNumericField @bind-Value="maxConcurrentTasks" 
+                                               Label="Max concurrent tasks" 
+                                               Variant="Variant.Outlined" 
+                                               Min="1" 
+                                               Max="16"
+                                               Disabled="!enableFileCompaction" />
+                            </MudStack>
+                        </MudExpansionPanel>
+                        
+                        <MudExpansionPanel Text="Z-Order Optimization">
+                            <MudStack Spacing="2">
+                                <MudSwitch @bind-Checked="enableZOrder" 
+                                         Label="Enable Z-Order clustering" 
+                                         Color="Color.Primary" />
+                                
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    Z-Order clustering co-locates related data for better data skipping
+                                </MudText>
+                                
+                                <MudSelect @bind-Value="zOrderColumns" 
+                                         Label="Z-Order columns" 
+                                         MultiSelection="true"
+                                         Variant="Variant.Outlined"
+                                         Disabled="!enableZOrder">
+                                    @foreach (var column in availableColumns)
+                                    {
+                                        <MudSelectItem Value="column">@column</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudStack>
+                        </MudExpansionPanel>
+                        
+                        <MudExpansionPanel Text="Advanced Options">
+                            <MudStack Spacing="2">
+                                <MudSwitch @bind-Checked="autoCompact" 
+                                         Label="Auto-compact after optimization" 
+                                         Color="Color.Primary" />
+                                
+                                <MudSwitch @bind-Checked="collectStatistics" 
+                                         Label="Collect table statistics" 
+                                         Color="Color.Primary" />
+                                
+                                <MudSelect @bind-Value="optimizeStrategy" 
+                                         Label="Optimization strategy" 
+                                         Variant="Variant.Outlined">
+                                    <MudSelectItem Value="OptimizeStrategy.Balanced">Balanced</MudSelectItem>
+                                    <MudSelectItem Value="OptimizeStrategy.Space">Space-optimized</MudSelectItem>
+                                    <MudSelectItem Value="OptimizeStrategy.Speed">Speed-optimized</MudSelectItem>
+                                </MudSelect>
+                            </MudStack>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Optimization Actions -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudButton StartIcon="Icons.Material.Filled.Speed"
+                                  Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  Size="Size.Large"
+                                  OnClick="StartOptimization"
+                                  Disabled="selectedTable == null || isOptimizing">
+                            @if (isOptimizing)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ml-2">Optimizing...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Start Optimization</MudText>
+                            }
+                        </MudButton>
+                        
+                        <MudStack Row Spacing="2">
+                            <MudButton StartIcon="Icons.Material.Filled.Preview"
+                                      Variant="Variant.Outlined"
+                                      OnClick="PreviewOptimization"
+                                      Disabled="selectedTable == null">
+                                Preview Changes
+                            </MudButton>
+                            
+                            <MudButton StartIcon="Icons.Material.Filled.Schedule"
+                                      Variant="Variant.Outlined"
+                                      OnClick="ScheduleOptimization"
+                                      Disabled="selectedTable == null">
+                                Schedule
+                            </MudButton>
+                        </MudStack>
+                    </MudStack>
+                    
+                    @if (optimizationProgress > 0)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Value="optimizationProgress" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@optimizationStatus</MudText>
+                    }
+                    
+                    @if (optimizationResult != null)
+                    {
+                        <MudCard>
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Optimization Results</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudGrid>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Primary">@optimizationResult.FilesRemoved</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Files Removed</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Success">@optimizationResult.FilesAdded</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Files Added</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Info">@((optimizationResult.BytesSaved / 1024 / 1024).ToString("F1"))MB</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Space Saved</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudStack AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.h6" Color="Color.Warning">@optimizationResult.Duration.ToString(@"mm\:ss")</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Duration</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Optimization History -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6">Optimization History</MudText>
+                        <MudButton StartIcon="Icons.Material.Filled.Clear"
+                                  Variant="Variant.Text"
+                                  Size="Size.Small"
+                                  OnClick="ClearHistory">
+                            Clear History
+                        </MudButton>
+                    </MudStack>
+                    
+                    @if (optimizationHistory.Any())
+                    {
+                        <MudTable Items="optimizationHistory" Dense="true" Hover="true" Striped="true">
+                            <HeaderContent>
+                                <MudTh>Table</MudTh>
+                                <MudTh>Type</MudTh>
+                                <MudTh>Files Before/After</MudTh>
+                                <MudTh>Space Saved</MudTh>
+                                <MudTh>Duration</MudTh>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Status</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.TableName</MudTd>
+                                <MudTd>
+                                    <MudStack Row Spacing="1">
+                                        @if (context.FileCompaction) { <MudChip Color="Color.Info" Size="Size.Small">Compact</MudChip> }
+                                        @if (context.ZOrderOptimization) { <MudChip Color="Color.Success" Size="Size.Small">Z-Order</MudChip> }
+                                    </MudStack>
+                                </MudTd>
+                                <MudTd>@context.FilesRemoved → @context.FilesAdded</MudTd>
+                                <MudTd>@((context.BytesSaved / 1024 / 1024).ToString("F1")) MB</MudTd>
+                                <MudTd>@context.Duration.ToString(@"mm\:ss")</MudTd>
+                                <MudTd>@context.Timestamp.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                                <MudTd>
+                                    @if (context.Success)
+                                    {
+                                        <MudIcon Icon="Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" />
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">No optimizations performed yet.</MudAlert>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private string? selectedTable;
+    private List<FileMetadata> deltaFiles = new();
+    private TableAnalysisResult? tableAnalysis;
+    private bool isAnalyzing = false;
+    private bool isOptimizing = false;
+    private double optimizationProgress = 0;
+    private string optimizationStatus = string.Empty;
+    private OptimizationResult? optimizationResult;
+    private int optimizationsRun = 0;
+
+    // Optimization settings
+    private bool enableFileCompaction = true;
+    private int targetFileSizeMB = 128;
+    private int maxConcurrentTasks = 4;
+    private bool enableZOrder = false;
+    private IEnumerable<string> zOrderColumns = new HashSet<string>();
+    private bool autoCompact = true;
+    private bool collectStatistics = true;
+    private OptimizeStrategy optimizeStrategy = OptimizeStrategy.Balanced;
+
+    private List<string> availableColumns = new() { "date", "category", "region", "customer_id", "product_id" };
+    private List<OptimizationHistoryItem> optimizationHistory = new();
+
+    protected override void OnInitialized()
+    {
+        LoadDeltaFiles();
+        optimizationsRun = optimizationHistory.Count;
+    }
+
+    private void LoadDeltaFiles()
+    {
+        deltaFiles = AppState.LoadedFiles.Where(f => f.Format == FileFormat.Delta).ToList();
+        if (deltaFiles.Any())
+        {
+            selectedTable = deltaFiles.First().Id;
+        }
+    }
+
+    private async Task AnalyzeTable()
+    {
+        if (selectedTable == null) return;
+
+        isAnalyzing = true;
+        
+        // Simulate analysis
+        await Task.Delay(2000);
+        
+        tableAnalysis = new TableAnalysisResult
+        {
+            TotalFiles = Random.Shared.Next(50, 200),
+            SmallFiles = Random.Shared.Next(20, 80),
+            AverageFileSizeBytes = Random.Shared.Next(10, 200) * 1024 * 1024,
+            HasDataSkipping = Random.Shared.NextDouble() > 0.3,
+            LastOptimized = Random.Shared.NextDouble() > 0.5 ? DateTime.Now.AddDays(-Random.Shared.Next(1, 30)) : null
+        };
+        
+        isAnalyzing = false;
+        StateHasChanged();
+    }
+
+    private async Task StartOptimization()
+    {
+        if (selectedTable == null) return;
+
+        isOptimizing = true;
+        optimizationProgress = 0;
+        optimizationStatus = "Preparing optimization...";
+
+        try
+        {
+            var startTime = DateTime.Now;
+            var steps = new[]
+            {
+                "Analyzing file layout...",
+                "Identifying small files...",
+                "Planning optimization strategy...",
+                "Compacting files...",
+                "Updating transaction log...",
+                "Finalizing optimization..."
+            };
+
+            for (int i = 0; i < steps.Length; i++)
+            {
+                optimizationStatus = steps[i];
+                optimizationProgress = (i + 1) * 100.0 / steps.Length;
+                StateHasChanged();
+                await Task.Delay(Random.Shared.Next(1000, 3000));
+            }
+
+            optimizationResult = new OptimizationResult
+            {
+                FilesRemoved = Random.Shared.Next(30, 100),
+                FilesAdded = Random.Shared.Next(10, 30),
+                BytesSaved = Random.Shared.Next(100, 500) * 1024 * 1024,
+                Duration = DateTime.Now - startTime
+            };
+
+            var historyItem = new OptimizationHistoryItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                TableName = deltaFiles.First(f => f.Id == selectedTable).FileName,
+                FileCompaction = enableFileCompaction,
+                ZOrderOptimization = enableZOrder,
+                FilesRemoved = optimizationResult.FilesRemoved,
+                FilesAdded = optimizationResult.FilesAdded,
+                BytesSaved = optimizationResult.BytesSaved,
+                Duration = optimizationResult.Duration,
+                Timestamp = DateTime.Now,
+                Success = true
+            };
+
+            optimizationHistory.Insert(0, historyItem);
+            optimizationsRun = optimizationHistory.Count;
+            optimizationStatus = "Optimization completed successfully!";
+
+            await Task.Delay(3000);
+            optimizationProgress = 0;
+        }
+        finally
+        {
+            isOptimizing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PreviewOptimization()
+    {
+        // TODO: Show preview dialog
+        await Task.CompletedTask;
+    }
+
+    private async Task ScheduleOptimization()
+    {
+        // TODO: Show scheduling dialog
+        await Task.CompletedTask;
+    }
+
+    private void ClearHistory()
+    {
+        optimizationHistory.Clear();
+        optimizationsRun = 0;
+        StateHasChanged();
+    }
+
+    private Severity GetRecommendationSeverity()
+    {
+        if (tableAnalysis == null) return Severity.Info;
+        
+        if (tableAnalysis.SmallFiles > 50) return Severity.Warning;
+        if (tableAnalysis.SmallFiles > 20) return Severity.Info;
+        return Severity.Success;
+    }
+
+    private string GetOptimizationRecommendation()
+    {
+        if (tableAnalysis == null) return "Analyze the table to get recommendations.";
+        
+        if (tableAnalysis.SmallFiles > 50)
+            return "High number of small files detected. File compaction is strongly recommended.";
+        if (tableAnalysis.SmallFiles > 20)
+            return "Several small files found. Consider running optimization to improve query performance.";
+        if (!tableAnalysis.HasDataSkipping)
+            return "Data skipping is disabled. Enable Z-Order clustering for better query performance.";
+        
+        return "Table is well-optimized. Regular maintenance optimization is recommended.";
+    }
+
+    public enum OptimizeStrategy
+    {
+        Balanced,
+        Space,
+        Speed
+    }
+
+    public class TableAnalysisResult
+    {
+        public int TotalFiles { get; set; }
+        public int SmallFiles { get; set; }
+        public long AverageFileSizeBytes { get; set; }
+        public bool HasDataSkipping { get; set; }
+        public DateTime? LastOptimized { get; set; }
+    }
+
+    public class OptimizationResult
+    {
+        public int FilesRemoved { get; set; }
+        public int FilesAdded { get; set; }
+        public long BytesSaved { get; set; }
+        public TimeSpan Duration { get; set; }
+    }
+
+    public class OptimizationHistoryItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string TableName { get; set; } = string.Empty;
+        public bool FileCompaction { get; set; }
+        public bool ZOrderOptimization { get; set; }
+        public int FilesRemoved { get; set; }
+        public int FilesAdded { get; set; }
+        public long BytesSaved { get; set; }
+        public TimeSpan Duration { get; set; }
+        public DateTime Timestamp { get; set; }
+        public bool Success { get; set; }
+    }
+}

@@ -15,14 +15,19 @@ public enum CompressionType
     Gzip,
     Brotli,
     LZ4,
-    ZSTD
+    Lz4,
+    ZSTD,
+    Zstd
 }
 
 public class FileMetadata
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     public Guid FileId { get; set; } = Guid.NewGuid();
     public string FileName { get; set; } = string.Empty;
     public long FileSize { get; set; }
+    public long FileSizeBytes { get; set; }
+    public long RowCount { get; set; }
     public FileFormat Format { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
@@ -82,4 +87,49 @@ public class ColumnMetadata
     public bool IsNullable { get; set; }
     public Dictionary<string, string> Metadata { get; set; } = new();
     public Statistics? Statistics { get; set; }
+}
+
+public class FileStatistics
+{
+    public Guid FileId { get; set; }
+    public long RowCount { get; set; }
+    public long FileSizeBytes { get; set; }
+    public int ColumnCount { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, ColumnStatistics> ColumnStats { get; set; } = new();
+    public List<PerformanceInsight> PerformanceInsights { get; set; } = new();
+    public List<DataQualityIssue> DataQualityIssues { get; set; } = new();
+}
+
+public class ColumnStatistics
+{
+    public string ColumnName { get; set; } = string.Empty;
+    public string DataType { get; set; } = string.Empty;
+    public long NullCount { get; set; }
+    public long DistinctCount { get; set; }
+    public string? MinValue { get; set; }
+    public string? MaxValue { get; set; }
+    public double? MeanValue { get; set; }
+    public double? StandardDeviation { get; set; }
+    public List<string> TopValues { get; set; } = new();
+    public Dictionary<string, int> ValueDistribution { get; set; } = new();
+}
+
+public class PerformanceInsight
+{
+    public string Type { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
+    public Dictionary<string, object> Metrics { get; set; } = new();
+}
+
+public class DataQualityIssue
+{
+    public string Type { get; set; } = string.Empty;
+    public string ColumnName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
+    public long AffectedRows { get; set; }
+    public string Recommendation { get; set; } = string.Empty;
 }
