@@ -5,54 +5,9 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<div class="page-wrapper">
-    <MudAppBar Elevation="1" Class="app-bar">
-        <MudIconButton Icon="Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" Class="d-lg-none" />
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-            <MudIcon Icon="Icons.Material.Filled.Storage" Color="Color.Primary" Size="Size.Large" />
-            <MudText Typo="Typo.h6" Class="ml-3">Parquet & Delta Lake Tool</MudText>
-        </MudStack>
-        <MudSpacer />
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                          Color="Color.Inherit"
-                          OnClick="ToggleTheme"
-                          Title="Toggle theme" />
-            <MudButton Href="/viewer" 
-                      Variant="Variant.Text" 
-                      Color="Color.Inherit"
-                      StartIcon="Icons.Material.Filled.Dashboard">
-                Dashboard
-            </MudButton>
-        </MudStack>
-    </MudAppBar>
-
-    <MudMainContent Class="simple-main-content">
-        @Body
-    </MudMainContent>
-</div>
-
-<style>
-    .page-wrapper {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .app-bar {
-        backdrop-filter: blur(10px);
-        background-color: rgba(248, 250, 252, 0.9) !important;
-    }
-    
-    .simple-main-content {
-        flex: 1;
-        padding: 0;
-    }
-    
-    .mud-theme-dark .app-bar {
-        background-color: rgba(30, 41, 59, 0.9) !important;
-    }
-</style>
+<ThreePanelLayout IsDarkMode="@_isDarkMode" IsDarkModeChanged="OnThemeChanged">
+    @Body
+</ThreePanelLayout>
 
 @code {
     private bool _isDarkMode = false;
@@ -88,14 +43,14 @@
         },
         Palette = new PaletteLight()
         {
-            Primary = "#2563eb", // Modern blue
-            Secondary = "#64748b", // Slate gray
-            Tertiary = "#10b981", // Emerald
-            Info = "#0ea5e9", // Sky blue
-            Success = "#059669", // Green
-            Warning = "#d97706", // Amber
-            Error = "#dc2626", // Red
-            Dark = "#1e293b", // Dark slate
+            Primary = "#2563eb",
+            Secondary = "#64748b",
+            Tertiary = "#10b981",
+            Info = "#0ea5e9",
+            Success = "#059669",
+            Warning = "#d97706",
+            Error = "#dc2626",
+            Dark = "#1e293b",
             Background = "#ffffff",
             Surface = "#f8fafc",
             AppbarBackground = "rgba(248, 250, 252, 0.8)",
@@ -112,14 +67,14 @@
         },
         PaletteDark = new PaletteDark()
         {
-            Primary = "#3b82f6", // Brighter blue for dark mode
-            Secondary = "#94a3b8", // Light slate
-            Tertiary = "#34d399", // Light emerald
-            Info = "#38bdf8", // Light sky
-            Success = "#10b981", // Emerald
-            Warning = "#f59e0b", // Amber
-            Error = "#f87171", // Light red
-            Dark = "#0f172a", // Very dark slate
+            Primary = "#3b82f6",
+            Secondary = "#94a3b8",
+            Tertiary = "#34d399",
+            Info = "#38bdf8",
+            Success = "#10b981",
+            Warning = "#f59e0b",
+            Error = "#f87171",
+            Dark = "#0f172a",
             Background = "#0f172a",
             Surface = "#1e293b",
             AppbarBackground = "rgba(30, 41, 59, 0.8)",
@@ -149,14 +104,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Load theme preference from localStorage in a real app
         await Task.CompletedTask;
     }
 
-    private async Task ToggleTheme()
+    private async Task OnThemeChanged(bool isDarkMode)
     {
-        _isDarkMode = !_isDarkMode;
-        // In a real app, save to localStorage
+        _isDarkMode = isDarkMode;
         await Task.CompletedTask;
         StateHasChanged();
     }

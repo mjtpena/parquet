@@ -63,10 +63,12 @@
     </script>
     
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="js/ui-helpers.js"></script>
-    <script src="js/storage-service.js"></script>
-    <script src="js/parquet-processor.js"></script>
-    <script src="js/duckdb-wrapper.js"></script>
+    <!-- Load webpack bundles -->
+    <script src="dist/vendors.bundle.js"></script>
+    <script src="dist/storage-service.bundle.js"></script>
+    <script src="dist/parquet-processor.bundle.js"></script>
+    <script src="dist/duckdb-wrapper.bundle.js"></script>
+    <script src="dist/ui-helpers.bundle.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
 </body>
