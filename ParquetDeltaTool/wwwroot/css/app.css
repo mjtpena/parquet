@@ -1,5 +1,152 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Modern utility classes */
+.font-mono { font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important; }
+.font-semibold { font-weight: 600 !important; }
+.font-bold { font-weight: 700 !important; }
+.font-medium { font-weight: 500 !important; }
+.font-normal { font-weight: 400 !important; }
+
+.opacity-90 { opacity: 0.9 !important; }
+.opacity-80 { opacity: 0.8 !important; }
+.opacity-60 { opacity: 0.6 !important; }
+
+.line-height-relaxed { line-height: 1.625 !important; }
+.max-w-3xl { max-width: 48rem !important; }
+.max-w-4xl { max-width: 56rem !important; }
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .pa-8 { padding: 1.5rem !important; }
+    .pa-6 { padding: 1rem !important; }
+    .pa-4 { padding: 0.75rem !important; }
+    
+    .mud-typography-h2 { font-size: 1.75rem !important; }
+    .mud-typography-h4 { font-size: 1.5rem !important; }
+    .mud-typography-h5 { font-size: 1.25rem !important; }
+    
+    .hero-spacing { gap: 1rem !important; }
+}
+
+@media (max-width: 600px) {
+    .mud-stack.hero-chips { 
+        flex-direction: column !important; 
+        align-items: center !important; 
+    }
+    
+    .mud-container { 
+        padding-left: 1rem !important; 
+        padding-right: 1rem !important; 
+    }
+}
+
+/* Modern glassmorphism and animations */
+.backdrop-blur-sm {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.gradient-hero {
+    background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.gradient-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* Smooth transitions */
+.mud-paper {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.mud-paper:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mud-button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.mud-button:hover {
+    transform: translateY(-1px) !important;
+}
+
+/* Custom chip styling */
+.feature-chip {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Enhanced focus states */
+.mud-button:focus-visible,
+.mud-icon-button:focus-visible {
+    outline: 2px solid var(--mud-palette-primary) !important;
+    outline-offset: 2px !important;
+}
+
+/* Loading state improvements */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+    .loading-shimmer {
+        background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+        background-size: 200% 100%;
+    }
+}
+
+/* Status chip animations */
+.status-chip {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Feature card hover effects */
+.feature-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+}
+
+.feature-card:hover::after {
+    left: 100%;
 }
 
 h1:focus {

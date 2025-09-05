@@ -1,69 +1,144 @@
-﻿<MudNavMenu>
-    <MudText Typo="Typo.h6" Class="px-4 py-2">Navigation</MudText>
-    <MudDivider />
+﻿<div class="pa-2">
+    <MudNavMenu Class="nav-menu-custom">
+        
+        <MudNavLink Href="/" 
+                    Match="NavLinkMatch.All" 
+                    Icon="Icons.Material.Filled.Home"
+                    Class="nav-item-home">
+            <MudText Typo="Typo.body1" Class="font-medium">Home</MudText>
+        </MudNavLink>
+        
+        <MudDivider Class="my-2 opacity-60" />
+        
+        <MudNavGroup Text="Data Processing" 
+                     Icon="Icons.Material.Filled.DataUsage" 
+                     Expanded="true"
+                     Class="nav-group-primary">
+            <MudNavLink Href="/viewer" Icon="Icons.Material.Filled.GridView" Class="nav-item">
+                <MudText Typo="Typo.body2">Data Viewer</MudText>
+                <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto">Soon</MudChip>
+            </MudNavLink>
+            <MudNavLink Href="/query" Icon="Icons.Material.Filled.Code" Class="nav-item">
+                <MudText Typo="Typo.body2">Query Engine</MudText>
+                <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto">Soon</MudChip>
+            </MudNavLink>
+            <MudNavLink Href="/schema" Icon="Icons.Material.Filled.AccountTree" Class="nav-item">
+                <MudText Typo="Typo.body2">Schema Explorer</MudText>
+                <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto">Soon</MudChip>
+            </MudNavLink>
+            <MudNavLink Href="/statistics" Icon="Icons.Material.Filled.Analytics" Class="nav-item">
+                <MudText Typo="Typo.body2">Statistics</MudText>
+                <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto">Soon</MudChip>
+            </MudNavLink>
+        </MudNavGroup>
+        
+        <MudNavGroup Text="Delta Lake" 
+                     Icon="Icons.Material.Filled.ChangeHistory" 
+                     Expanded="true"
+                     Class="nav-group-secondary">
+            <MudNavLink Href="/delta/history" Icon="Icons.Material.Filled.Timeline" Class="nav-item">
+                <MudText Typo="Typo.body2">Version History</MudText>
+            </MudNavLink>
+            <MudNavLink Href="/delta/optimize" Icon="Icons.Material.Filled.Speed" Class="nav-item">
+                <MudText Typo="Typo.body2">Optimize</MudText>
+            </MudNavLink>
+            <MudNavLink Href="/delta/vacuum" Icon="Icons.Material.Filled.CleaningServices" Class="nav-item">
+                <MudText Typo="Typo.body2">Vacuum</MudText>
+            </MudNavLink>
+        </MudNavGroup>
+        
+        <MudNavGroup Text="Tools" 
+                     Icon="Icons.Material.Filled.Build" 
+                     Expanded="false"
+                     Class="nav-group-tools">
+            <MudNavLink Href="/converter" Icon="Icons.Material.Filled.SwapHoriz" Class="nav-item">
+                <MudText Typo="Typo.body2">Format Converter</MudText>
+            </MudNavLink>
+            <MudNavLink Href="/validator" Icon="Icons.Material.Filled.VerifiedUser" Class="nav-item">
+                <MudText Typo="Typo.body2">Data Validator</MudText>
+                <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto">Soon</MudChip>
+            </MudNavLink>
+            <MudNavLink Href="/generator" Icon="Icons.Material.Filled.AutoAwesome" Class="nav-item">
+                <MudText Typo="Typo.body2">Schema Generator</MudText>
+                <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto">Soon</MudChip>
+            </MudNavLink>
+        </MudNavGroup>
+        
+        <MudDivider Class="my-3 opacity-60" />
+        
+        <MudNavLink Href="/settings" 
+                    Icon="Icons.Material.Filled.Settings" 
+                    Class="nav-item-secondary">
+            <MudText Typo="Typo.body1">Settings</MudText>
+        </MudNavLink>
+        
+        <MudNavLink Href="/about" 
+                    Icon="Icons.Material.Filled.InfoOutlined" 
+                    Class="nav-item-secondary">
+            <MudText Typo="Typo.body1">About</MudText>
+        </MudNavLink>
+        
+        <div class="mt-auto pa-3">
+            <MudPaper Class="pa-3" Elevation="0" Style="background: var(--mud-palette-info); color: white; border-radius: 12px;">
+                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="Icons.Material.Filled.Rocket" Size="Size.Medium" />
+                    <MudText Typo="Typo.caption" Align="Align.Center" Style="line-height: 1.4;">
+                        <strong>Developer Preview</strong><br/>
+                        WebAssembly-powered<br/>
+                        data processing
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </div>
+        
+    </MudNavMenu>
+</div>
+
+<style>
+    .nav-menu-custom .mud-nav-link {
+        border-radius: 8px !important;
+        margin: 2px 0 !important;
+        transition: all 0.2s ease !important;
+    }
     
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="Icons.Material.Filled.Home">
-        Home
-    </MudNavLink>
+    .nav-menu-custom .mud-nav-link:hover {
+        background-color: var(--mud-palette-action-hover) !important;
+        transform: translateX(4px);
+    }
     
-    <MudNavGroup Text="File Operations" Icon="Icons.Material.Filled.Folder" Expanded="true">
-        <MudNavLink Href="/upload" Icon="Icons.Material.Filled.Upload">
-            Upload Files
-        </MudNavLink>
-        <MudNavLink Href="/recent" Icon="Icons.Material.Filled.History">
-            Recent Files
-        </MudNavLink>
-        <MudNavLink Href="/cloud" Icon="Icons.Material.Filled.Cloud">
-            Cloud Storage
-        </MudNavLink>
-    </MudNavGroup>
+    .nav-menu-custom .mud-nav-link.active {
+        background-color: var(--mud-palette-primary) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(var(--mud-palette-primary-rgb), 0.3);
+    }
     
-    <MudNavGroup Text="Data Analysis" Icon="Icons.Material.Filled.Analytics" Expanded="true">
-        <MudNavLink Href="/viewer" Icon="Icons.Material.Filled.GridView">
-            Data Viewer
-        </MudNavLink>
-        <MudNavLink Href="/query" Icon="Icons.Material.Filled.Search">
-            Query Engine
-        </MudNavLink>
-        <MudNavLink Href="/schema" Icon="Icons.Material.Filled.Schema">
-            Schema Explorer
-        </MudNavLink>
-        <MudNavLink Href="/statistics" Icon="Icons.Material.Filled.BarChart">
-            Statistics
-        </MudNavLink>
-    </MudNavGroup>
+    .nav-group-primary .mud-nav-group-header {
+        color: var(--mud-palette-primary) !important;
+        font-weight: 600 !important;
+    }
     
-    <MudNavGroup Text="Delta Lake" Icon="Icons.Material.Filled.ChangeHistory" Expanded="false">
-        <MudNavLink Href="/delta/history" Icon="Icons.Material.Filled.History">
-            Version History
-        </MudNavLink>
-        <MudNavLink Href="/delta/optimize" Icon="Icons.Material.Filled.Speed">
-            Optimize
-        </MudNavLink>
-        <MudNavLink Href="/delta/vacuum" Icon="Icons.Material.Filled.CleaningServices">
-            Vacuum
-        </MudNavLink>
-    </MudNavGroup>
+    .nav-group-secondary .mud-nav-group-header {
+        color: var(--mud-palette-tertiary) !important;
+        font-weight: 600 !important;
+    }
     
-    <MudNavGroup Text="Tools" Icon="Icons.Material.Filled.Build" Expanded="false">
-        <MudNavLink Href="/converter" Icon="Icons.Material.Filled.Transform">
-            Format Converter
-        </MudNavLink>
-        <MudNavLink Href="/validator" Icon="Icons.Material.Filled.CheckCircle">
-            Data Validator
-        </MudNavLink>
-        <MudNavLink Href="/generator" Icon="Icons.Material.Filled.AutoFixHigh">
-            Schema Generator
-        </MudNavLink>
-    </MudNavGroup>
+    .nav-group-tools .mud-nav-group-header {
+        color: var(--mud-palette-info) !important;
+        font-weight: 600 !important;
+    }
     
-    <MudDivider Class="my-2" />
+    .nav-item-home {
+        background: linear-gradient(135deg, var(--mud-palette-primary), var(--mud-palette-info)) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        margin-bottom: 8px !important;
+    }
     
-    <MudNavLink Href="/settings" Icon="Icons.Material.Filled.Settings">
-        Settings
-    </MudNavLink>
+    .mud-drawer-mini .nav-menu-custom .mud-text {
+        display: none;
+    }
     
-    <MudNavLink Href="/about" Icon="Icons.Material.Filled.Info">
-        About
-    </MudNavLink>
-</MudNavMenu>
+    .mud-drawer-mini .nav-menu-custom .mud-chip {
+        display: none;
+    }
+</style>

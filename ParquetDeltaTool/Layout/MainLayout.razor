@@ -1,28 +1,82 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="@_theme" />
+<MudThemeProvider Theme="@_currentTheme" IsDarkMode="@_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-        <MudText Typo="Typo.h6" Class="ml-4">Parquet & Delta Lake Tool</MudText>
+    <MudAppBar Elevation="0" 
+               Color="Color.Transparent" 
+               Class="@($"backdrop-blur-sm border-b {(_isDarkMode ? "border-gray-700" : "border-gray-200")}")"
+               Style="background: rgba(var(--mud-palette-surface), 0.8);">
+        <MudIconButton Icon="Icons.Material.Filled.Menu" 
+                      Color="Color.Inherit" 
+                      Edge="Edge.Start" 
+                      OnClick="@ToggleDrawer"
+                      Class="hover:bg-opacity-20" />
+        
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="ml-2">
+            <MudIcon Icon="Icons.Material.Filled.Storage" Color="Color.Primary" Size="Size.Medium" />
+            <MudText Typo="Typo.h6" Class="font-mono font-bold">
+                <span class="text-primary">Parquet</span>
+                <span class="text-secondary mx-1">&</span>
+                <span class="text-info">Delta</span>
+                <span class="text-secondary ml-2 font-normal">Tool</span>
+            </MudText>
+        </MudStack>
+        
         <MudSpacer />
-        <MudIconButton Icon="Icons.Material.Filled.Brightness4" Color="Color.Inherit" OnClick="@ToggleTheme" />
-        <MudIconButton Icon="Icons.Material.Filled.Settings" Color="Color.Inherit" />
-        <MudIconButton Icon="Icons.Material.Filled.Help" Color="Color.Inherit" />
+        
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+            <MudTooltip Text="Toggle Theme">
+                <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
+                              Color="Color.Inherit" 
+                              OnClick="@ToggleTheme"
+                              Class="hover:bg-opacity-20" />
+            </MudTooltip>
+            
+            <MudTooltip Text="Settings">
+                <MudIconButton Icon="Icons.Material.Filled.Settings" 
+                              Color="Color.Inherit"
+                              Href="/settings"
+                              Class="hover:bg-opacity-20" />
+            </MudTooltip>
+            
+            <MudTooltip Text="Documentation">
+                <MudIconButton Icon="Icons.Material.Filled.Help" 
+                              Color="Color.Inherit"
+                              Href="/about"
+                              Class="hover:bg-opacity-20" />
+            </MudTooltip>
+            
+            <MudButton StartIcon="Icons.Custom.Brands.GitHub"
+                      Variant="Variant.Outlined"
+                      Size="Size.Small"
+                      Color="Color.Inherit"
+                      Href="https://github.com/mjtpena/parquet"
+                      Target="_blank"
+                      Class="ml-2">
+                GitHub
+            </MudButton>
+        </MudStack>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="@_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+    <MudDrawer @bind-Open="@_drawerOpen" 
+               ClipMode="DrawerClipMode.Always" 
+               Elevation="0"
+               Class="@($"border-r {(_isDarkMode ? "border-gray-700" : "border-gray-200")}")"
+               Variant="DrawerVariant.Mini"
+               OpenMiniOnHover="true">
         <NavMenu />
     </MudDrawer>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4" Style="height: calc(100vh - 64px); overflow: hidden;">
-            @Body
-        </MudContainer>
+    <MudMainContent Class="@($"{(_isDarkMode ? "dark-theme" : "light-theme")} transition-all duration-300")">
+        <div class="min-h-screen" style="background: linear-gradient(135deg, var(--mud-palette-background) 0%, var(--mud-palette-surface) 100%);">
+            <MudContainer MaxWidth="MaxWidth.False" Class="pa-6">
+                @Body
+            </MudContainer>
+        </div>
     </MudMainContent>
 </MudLayout>
 
@@ -30,38 +84,112 @@
     private bool _drawerOpen = true;
     private bool _isDarkMode = false;
 
-    private readonly MudTheme _theme = new()
+    private MudTheme _currentTheme => new()
     {
+        Typography = new Typography()
+        {
+            Default = new Default()
+            {
+                FontFamily = new[] { "Inter", "Roboto", "Helvetica", "Arial", "sans-serif" },
+                FontSize = "0.875rem",
+                FontWeight = 400,
+                LineHeight = 1.43,
+                LetterSpacing = "0.01071em"
+            },
+            H1 = new H1()
+            {
+                FontFamily = new[] { "Inter", "Roboto", "Helvetica", "Arial", "sans-serif" },
+                FontSize = "2.5rem",
+                FontWeight = 300,
+                LineHeight = 1.167,
+                LetterSpacing = "-0.01562em"
+            },
+            H2 = new H2()
+            {
+                FontFamily = new[] { "Inter", "Roboto", "Helvetica", "Arial", "sans-serif" },
+                FontSize = "2rem",
+                FontWeight = 300,
+                LineHeight = 1.2,
+                LetterSpacing = "-0.00833em"
+            }
+        },
         Palette = new PaletteLight()
         {
-            Primary = "#1976d2",
-            Secondary = "#424242",
-            AppbarBackground = "#1976d2",
-            Background = "#f5f5f5",
+            Primary = "#2563eb", // Modern blue
+            Secondary = "#64748b", // Slate gray
+            Tertiary = "#10b981", // Emerald
+            Info = "#0ea5e9", // Sky blue
+            Success = "#059669", // Green
+            Warning = "#d97706", // Amber
+            Error = "#dc2626", // Red
+            Dark = "#1e293b", // Dark slate
+            Background = "#ffffff",
+            Surface = "#f8fafc",
+            AppbarBackground = "rgba(248, 250, 252, 0.8)",
             DrawerBackground = "#ffffff",
-            DrawerText = "rgba(0,0,0, 0.87)",
-            Success = "#00c853"
+            DrawerText = "#334155",
+            TextPrimary = "#0f172a",
+            TextSecondary = "#64748b",
+            ActionDefault = "#64748b",
+            ActionDisabled = "#cbd5e1",
+            ActionDisabledBackground = "#f1f5f9",
+            Divider = "#e2e8f0",
+            LinesDefault = "#e2e8f0",
+            TableLines = "#e2e8f0"
         },
         PaletteDark = new PaletteDark()
         {
-            Primary = "#90caf9",
-            Secondary = "#f48fb1",
-            AppbarBackground = "#1e1e1e",
-            Background = "#121212",
-            DrawerBackground = "#1e1e1e",
-            DrawerText = "rgba(255,255,255, 0.87)",
-            Success = "#00e676"
+            Primary = "#3b82f6", // Brighter blue for dark mode
+            Secondary = "#94a3b8", // Light slate
+            Tertiary = "#34d399", // Light emerald
+            Info = "#38bdf8", // Light sky
+            Success = "#10b981", // Emerald
+            Warning = "#f59e0b", // Amber
+            Error = "#f87171", // Light red
+            Dark = "#0f172a", // Very dark slate
+            Background = "#0f172a",
+            Surface = "#1e293b",
+            AppbarBackground = "rgba(30, 41, 59, 0.8)",
+            DrawerBackground = "#1e293b",
+            DrawerText = "#e2e8f0",
+            TextPrimary = "#f1f5f9",
+            TextSecondary = "#94a3b8",
+            ActionDefault = "#94a3b8",
+            ActionDisabled = "#475569",
+            ActionDisabledBackground = "#334155",
+            Divider = "#334155",
+            LinesDefault = "#334155",
+            TableLines = "#334155"
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DrawerWidthLeft = "280px",
+            DrawerWidthRight = "280px",
+            AppbarHeight = "64px"
+        },
+        ZIndex = new ZIndex()
+        {
+            Drawer = 1200,
+            AppBar = 1100
         }
     };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load theme preference from localStorage in a real app
+        await Task.CompletedTask;
+    }
 
     private void ToggleDrawer()
     {
         _drawerOpen = !_drawerOpen;
     }
 
-    private void ToggleTheme()
+    private async Task ToggleTheme()
     {
         _isDarkMode = !_isDarkMode;
-        // TODO: Implement theme switching
+        // In a real app, save to localStorage
+        await Task.CompletedTask;
+        StateHasChanged();
     }
 }

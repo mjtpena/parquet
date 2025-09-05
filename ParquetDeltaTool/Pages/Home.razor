@@ -5,103 +5,363 @@
 
 <PageTitle>Parquet & Delta Lake Tool</PageTitle>
 
-<MudGrid>
-    <MudItem xs="12">
-        <MudPaper Class="pa-6" Elevation="2">
-            <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">
-                <MudIcon Icon="Icons.Material.Filled.Storage" Size="Size.Large" Class="mr-2" />
-                Parquet & Delta Lake Tool
-            </MudText>
-            <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Secondary" Class="mb-6">
-                Your comprehensive data engineering toolkit for Parquet files and Delta Lake tables
+<MudStack Spacing="6">
+    <!-- Hero Section -->
+    <MudPaper Class="pa-8 gradient-hero" Elevation="0" Style="color: white; border-radius: 16px;">
+        <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="hero-spacing">
+            <MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+                <MudIcon Icon="Icons.Material.Filled.Storage" Size="Size.Large" />
+                <MudText Typo="Typo.h2" Class="font-mono font-bold">
+                    Parquet & Delta Tool
+                </MudText>
+            </MudStack>
+            
+            <MudText Typo="Typo.h5" Align="Align.Center" Class="opacity-90 max-w-3xl">
+                🚀 Next-gen data engineering toolkit powered by WebAssembly
             </MudText>
             
-            <MudGrid Justify="Justify.Center">
-                <MudItem xs="12" md="8">
-                    <FileUploadComponent OnFileUploaded="HandleFileUploaded" />
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-    </MudItem>
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="opacity-80 max-w-4xl">
+                Process Parquet files and Delta Lake tables entirely in your browser. 
+                Zero server dependencies • Complete privacy • Lightning fast performance
+            </MudText>
+            
+            <MudStack Row Spacing="2" Class="mt-4 hero-chips">
+                <MudChip Icon="Icons.Material.Filled.Security" Size="Size.Medium" Color="Color.Surface" Class="font-semibold feature-chip">
+                    Privacy-First
+                </MudChip>
+                <MudChip Icon="Icons.Material.Filled.Speed" Size="Size.Medium" Color="Color.Surface" Class="font-semibold feature-chip">
+                    WASM Powered
+                </MudChip>
+                <MudChip Icon="Icons.Material.Filled.CloudOff" Size="Size.Medium" Color="Color.Surface" Class="font-semibold feature-chip">
+                    Offline Capable
+                </MudChip>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
 
-    @if (_recentFiles.Any())
-    {
-        <MudItem xs="12" lg="8">
-            <MudPaper Class="pa-4" Elevation="1">
-                <MudText Typo="Typo.h5" GutterBottom="true">
-                    <MudIcon Icon="Icons.Material.Filled.History" Class="mr-2" />
-                    Recent Files
-                </MudText>
-                
-                <MudTable Items="@_recentFiles" Hover="true" Striped="true" Dense="true">
-                    <HeaderContent>
-                        <MudTh>Name</MudTh>
-                        <MudTh>Format</MudTh>
-                        <MudTh>Size</MudTh>
-                        <MudTh>Modified</MudTh>
-                        <MudTh>Actions</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Name">
-                            <MudIcon Icon="@GetFileIcon(context.Format)" Class="mr-2" />
-                            @context.FileName
-                        </MudTd>
-                        <MudTd DataLabel="Format">
-                            <MudChip Size="Size.Small" Color="@GetFormatColor(context.Format)">
-                                @context.Format
-                            </MudChip>
-                        </MudTd>
-                        <MudTd DataLabel="Size">@FormatFileSize(context.FileSize)</MudTd>
-                        <MudTd DataLabel="Modified">@context.ModifiedAt.ToString("yyyy-MM-dd HH:mm")</MudTd>
-                        <MudTd DataLabel="Actions">
-                            <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
-                                <MudButton StartIcon="Icons.Material.Filled.Visibility" 
-                                          OnClick="@(() => OpenFile(context))"
-                                          Size="Size.Small">
-                                    View
-                                </MudButton>
-                                <MudButton StartIcon="Icons.Material.Filled.Delete" 
-                                          OnClick="@(() => DeleteFile(context.FileId))"
-                                          Color="Color.Error"
-                                          Size="Size.Small">
-                                    Delete
-                                </MudButton>
-                            </MudButtonGroup>
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
+    <!-- Features Grid -->
+    <MudGrid>
+        <!-- Data Processing Features -->
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-6 h-full feature-card" Elevation="2" Style="border-radius: 12px; border: 2px solid var(--mud-palette-primary); background: rgba(var(--mud-palette-primary), 0.02);">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.DataUsage" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Color="Color.Primary" Class="font-semibold">Data Processing</MudText>
+                    </MudStack>
+                    
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="line-height-relaxed">
+                        Comprehensive suite for analyzing, querying, and transforming your data files with enterprise-grade performance.
+                    </MudText>
+                    
+                    <MudStack Spacing="2">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.GridView" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Interactive Data Viewer</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto status-chip">Soon</MudChip>
+                        </MudStack>
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Code" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">SQL Query Engine</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto status-chip">Soon</MudChip>
+                        </MudStack>
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Analytics" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Statistics Dashboard</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto status-chip">Soon</MudChip>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
             </MudPaper>
         </MudItem>
-    }
 
-    <MudItem xs="12" lg="4">
-        <MudPaper Class="pa-4" Elevation="1">
-            <MudText Typo="Typo.h5" GutterBottom="true">
-                <MudIcon Icon="Icons.Material.Filled.Info" Class="mr-2" />
-                Quick Start
-            </MudText>
+        <!-- Delta Lake Features -->
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-6 h-full feature-card" Elevation="2" Style="border-radius: 12px; border: 2px solid var(--mud-palette-tertiary); background: rgba(var(--mud-palette-tertiary), 0.02);">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.ChangeHistory" Color="Color.Tertiary" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Color="Color.Tertiary" Class="font-semibold">Delta Lake</MudText>
+                    </MudStack>
+                    
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="line-height-relaxed">
+                        Advanced Delta Lake operations including time travel, ACID transactions, and table optimization.
+                    </MudText>
+                    
+                    <MudStack Spacing="2">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Timeline" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Version History</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Success" Class="ml-auto">Ready</MudChip>
+                        </MudStack>
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Speed" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Table Optimization</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Success" Class="ml-auto">Ready</MudChip>
+                        </MudStack>
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.CleaningServices" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Vacuum Operations</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Success" Class="ml-auto">Ready</MudChip>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Developer Tools -->
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-6 h-full feature-card" Elevation="2" Style="border-radius: 12px; border: 2px solid var(--mud-palette-info); background: rgba(var(--mud-palette-info), 0.02);">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="Icons.Material.Filled.Build" Color="Color.Info" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Color="Color.Info" Class="font-semibold">Developer Tools</MudText>
+                    </MudStack>
+                    
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="line-height-relaxed">
+                        Essential utilities for data engineers and developers working with modern data formats.
+                    </MudText>
+                    
+                    <MudStack Spacing="2">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.SwapHoriz" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Format Converter</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Success" Class="ml-auto">Ready</MudChip>
+                        </MudStack>
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.AccountTree" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Schema Explorer</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto status-chip">Soon</MudChip>
+                        </MudStack>
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.VerifiedUser" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">Data Validator</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Warning" Class="ml-auto status-chip">Soon</MudChip>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <!-- File Upload Section -->
+    <MudPaper Class="pa-6" Elevation="1" Style="border-radius: 12px; border: 2px dashed var(--mud-palette-primary); background: rgba(var(--mud-palette-primary), 0.01);">
+        <MudStack AlignItems="AlignItems.Center" Spacing="4">
+            <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="Icons.Material.Filled.CloudUpload" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h4" Color="Color.Primary" Class="font-semibold">Get Started</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                    Drop your Parquet files, Delta tables, or CSV data to begin analysis
+                </MudText>
+            </MudStack>
             
-            <MudList Clickable="true">
-                <MudListItem Icon="Icons.Material.Filled.Upload" Text="Upload Files" 
-                            Href="/upload" />
-                <MudListItem Icon="Icons.Material.Filled.Search" Text="Query Data" 
-                            Href="/query" />
-                <MudListItem Icon="Icons.Material.Filled.Schema" Text="Explore Schema" 
-                            Href="/schema" />
-                <MudListItem Icon="Icons.Material.Filled.BarChart" Text="View Statistics" 
-                            Href="/statistics" />
-            </MudList>
+            <MudContainer MaxWidth="MaxWidth.Medium">
+                <FileUploadComponent OnFileUploaded="HandleFileUploaded" />
+            </MudContainer>
+        </MudStack>
+    </MudPaper>
 
-            <MudDivider Class="my-4" />
+    <!-- Recent Files & Quick Actions -->
+    @if (_recentFiles.Any())
+    {
+        <MudGrid>
+            <MudItem xs="12" lg="8">
+                <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+                    <MudStack Spacing="4">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.History" Color="Color.Primary" Size="Size.Medium" />
+                            <MudText Typo="Typo.h5" Class="font-semibold">Recent Files</MudText>
+                        </MudStack>
+                        
+                        <MudTable Items="@_recentFiles" Hover="true" Dense="true" Elevation="0" Class="rounded-lg overflow-hidden">
+                            <HeaderContent>
+                                <MudTh Style="font-weight: 600;">Name</MudTh>
+                                <MudTh Style="font-weight: 600;">Format</MudTh>
+                                <MudTh Style="font-weight: 600;">Size</MudTh>
+                                <MudTh Style="font-weight: 600;">Modified</MudTh>
+                                <MudTh Style="font-weight: 600;">Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Name">
+                                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudIcon Icon="@GetFileIcon(context.Format)" Size="Size.Small" />
+                                        <MudText Class="font-mono">@context.FileName</MudText>
+                                    </MudStack>
+                                </MudTd>
+                                <MudTd DataLabel="Format">
+                                    <MudChip Size="Size.Small" Color="@GetFormatColor(context.Format)" Class="font-semibold">
+                                        @context.Format
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="Size">
+                                    <MudText Class="font-mono">@FormatFileSize(context.FileSize)</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Modified">
+                                    <MudText Class="font-mono">@context.ModifiedAt.ToString("MMM dd, HH:mm")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Actions">
+                                    <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
+                                        <MudButton StartIcon="Icons.Material.Filled.Visibility" 
+                                                  OnClick="@(() => OpenFile(context))"
+                                                  Size="Size.Small"
+                                                  Color="Color.Primary">
+                                            View
+                                        </MudButton>
+                                        <MudButton StartIcon="Icons.Material.Filled.Delete" 
+                                                  OnClick="@(() => DeleteFile(context.FileId))"
+                                                  Color="Color.Error"
+                                                  Size="Size.Small">
+                                            Delete
+                                        </MudButton>
+                                    </MudButtonGroup>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
 
-            <MudText Typo="Typo.h6" GutterBottom="true">Storage Usage</MudText>
-            <MudProgressLinear Value="@_storageUsagePercent" Color="Color.Primary" Class="my-2" />
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                @FormatFileSize(_storageUsed) / @FormatFileSize(_storageTotal)
-            </MudText>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+            <MudItem xs="12" lg="4">
+                <MudStack Spacing="4">
+                    <!-- Quick Actions -->
+                    <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+                        <MudStack Spacing="4">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="Icons.Material.Filled.Bolt" Color="Color.Primary" Size="Size.Medium" />
+                                <MudText Typo="Typo.h5" Class="font-semibold">Quick Actions</MudText>
+                            </MudStack>
+                            
+                            <MudStack Spacing="2">
+                                <MudButton Href="/viewer" 
+                                          StartIcon="Icons.Material.Filled.GridView" 
+                                          Variant="Variant.Outlined" 
+                                          Color="Color.Primary"
+                                          FullWidth="true"
+                                          Class="justify-start">
+                                    Data Viewer
+                                </MudButton>
+                                <MudButton Href="/query" 
+                                          StartIcon="Icons.Material.Filled.Code" 
+                                          Variant="Variant.Outlined" 
+                                          Color="Color.Primary"
+                                          FullWidth="true"
+                                          Class="justify-start">
+                                    SQL Query
+                                </MudButton>
+                                <MudButton Href="/converter" 
+                                          StartIcon="Icons.Material.Filled.SwapHoriz" 
+                                          Variant="Variant.Filled" 
+                                          Color="Color.Primary"
+                                          FullWidth="true"
+                                          Class="justify-start">
+                                    Format Converter
+                                </MudButton>
+                                <MudButton Href="/delta/history" 
+                                          StartIcon="Icons.Material.Filled.Timeline" 
+                                          Variant="Variant.Outlined" 
+                                          Color="Color.Tertiary"
+                                          FullWidth="true"
+                                          Class="justify-start">
+                                    Delta History
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </MudPaper>
+
+                    <!-- Storage Usage -->
+                    <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+                        <MudStack Spacing="3">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="Icons.Material.Filled.Storage" Color="Color.Info" Size="Size.Medium" />
+                                <MudText Typo="Typo.h6" Class="font-semibold">Storage Usage</MudText>
+                            </MudStack>
+                            
+                            <MudProgressLinear Value="@_storageUsagePercent" 
+                                              Color="Color.Info" 
+                                              Size="Size.Large"
+                                              Class="rounded-full" />
+                            
+                            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.body2" Class="font-mono">
+                                    @FormatFileSize(_storageUsed)
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    of @FormatFileSize(_storageTotal)
+                                </MudText>
+                            </MudStack>
+                        </MudStack>
+                    </MudPaper>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        <!-- Developer Documentation -->
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+                    <MudStack Spacing="3">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.Code" Color="Color.Primary" Size="Size.Medium" />
+                            <MudText Typo="Typo.h5" Class="font-semibold">For Developers</MudText>
+                        </MudStack>
+                        
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Built with modern web technologies for maximum performance and developer experience.
+                        </MudText>
+                        
+                        <MudStack Spacing="2">
+                            <MudAlert Severity="Severity.Info" Dense="true" Class="rounded-lg">
+                                <strong>WebAssembly Integration:</strong> DuckDB and Arrow for high-performance data processing
+                            </MudAlert>
+                            <MudAlert Severity="Severity.Success" Dense="true" Class="rounded-lg">
+                                <strong>Privacy First:</strong> All processing happens locally in your browser
+                            </MudAlert>
+                            <MudAlert Severity="Severity.Warning" Dense="true" Class="rounded-lg">
+                                <strong>Progressive Web App:</strong> Install and use offline capabilities
+                            </MudAlert>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-6" Elevation="2" Style="border-radius: 12px;">
+                    <MudStack Spacing="3">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="Icons.Material.Filled.GitHub" Color="Color.Dark" Size="Size.Medium" />
+                            <MudText Typo="Typo.h5" Class="font-semibold">Open Source</MudText>
+                        </MudStack>
+                        
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Explore the source code, contribute, or customize for your needs.
+                        </MudText>
+                        
+                        <MudStack Spacing="2">
+                            <MudButton Href="https://github.com/mjtpena/parquet" 
+                                      Target="_blank"
+                                      StartIcon="Icons.Custom.Brands.GitHub"
+                                      Variant="Variant.Outlined"
+                                      Color="Color.Dark"
+                                      FullWidth="true">
+                                View on GitHub
+                            </MudButton>
+                            <MudStack Row Justify="Justify.SpaceBetween">
+                                <MudChip Icon="Icons.Material.Filled.Star" Size="Size.Small">
+                                    MIT License
+                                </MudChip>
+                                <MudChip Icon="Icons.Material.Filled.Code" Size="Size.Small" Color="Color.Primary">
+                                    Blazor + WASM
+                                </MudChip>
+                            </MudStack>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudStack>
 
 @code {
     private List<FileMetadata> _recentFiles = new();
