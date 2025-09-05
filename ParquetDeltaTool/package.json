@@ -10,6 +10,7 @@
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.28.0",
     "apache-arrow": "^17.0.0",
+    "parquet-wasm": "^0.6.0",
     "monaco-editor": "^0.52.2"
   },
   "devDependencies": {
