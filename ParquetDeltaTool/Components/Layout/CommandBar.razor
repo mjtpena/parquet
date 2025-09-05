@@ -1,0 +1,298 @@
+@using ParquetDeltaTool.Components.Layout
+@using MudBlazor
+
+<div class="command-bar" id="command-bar" style="@GetCommandBarStyle()">
+    <div class="command-input-container">
+        <MudIcon Icon="Icons.Material.Filled.Search" Size="Size.Small" Class="command-icon" />
+        <input type="text"
+               class="command-input"
+               placeholder="Type a command..."
+               @bind="SearchTerm"
+               @oninput="OnSearchInput"
+               @onkeydown="OnKeyDown"
+               @onfocus="OnFocus"
+               @onblur="OnBlur"
+               autocomplete="off"
+               role="combobox"
+               aria-expanded="@IsOpen"
+               aria-haspopup="listbox"
+               aria-controls="command-results" />
+        <div class="command-shortcut">
+            <kbd>Ctrl</kbd><kbd>K</kbd>
+        </div>
+    </div>
+
+    @if (IsOpen && FilteredCommands.Any())
+    {
+        <div class="command-results" id="command-results" role="listbox">
+            @foreach (var command in FilteredCommands.Take(8))
+            {
+                <div class="command-item @(command == SelectedCommand ? "selected" : "")"
+                     @onclick="() => ExecuteCommand(command)"
+                     @onmouseenter="() => SelectCommand(command)"
+                     role="option"
+                     aria-selected="@(command == SelectedCommand)"
+                     tabindex="-1">
+                    <div class="command-icon-container">
+                        <MudIcon Icon="@command.Icon" Size="Size.Small" Color="@command.IconColor" />
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">@GetHighlightedText(command.Name, SearchTerm)</div>
+                        <div class="command-description">@command.Description</div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(command.Shortcut))
+                    {
+                        <div class="command-shortcut-display">@command.Shortcut</div>
+                    }
+                </div>
+            }
+        </div>
+    }
+    
+    @if (IsOpen && !FilteredCommands.Any() && !string.IsNullOrEmpty(SearchTerm))
+    {
+        <div class="command-results">
+            <div class="no-results">
+                <MudIcon Icon="Icons.Material.Filled.SearchOff" Size="Size.Medium" Color="Color.Tertiary" />
+                <MudText Typo="Typo.body2" Color="Color.Tertiary">No commands found</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Tertiary">Try a different search term</MudText>
+            </div>
+        </div>
+    }
+</div>
+
+@if (IsOpen)
+{
+    <div class="command-overlay" @onclick="Close"></div>
+}
+
+@code {
+    [Parameter] public EventCallback<CommandItem> OnCommandExecuted { get; set; }
+    [Parameter] public bool IsVisible { get; set; } = false;
+
+    private string SearchTerm = string.Empty;
+    private bool IsOpen = false;
+    private bool IsFocused = false;
+    private CommandItem? SelectedCommand = null;
+    private int SelectedIndex = -1;
+
+    private List<CommandItem> AllCommands = new();
+    private List<CommandItem> FilteredCommands = new();
+
+    protected override void OnInitialized()
+    {
+        InitializeCommands();
+        FilterCommands();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && !IsOpen)
+        {
+            Open();
+        }
+        else if (!IsVisible && IsOpen)
+        {
+            Close();
+        }
+    }
+
+    private void InitializeCommands()
+    {
+        AllCommands = new List<CommandItem>
+        {
+            // Navigation commands
+            new() { Name = "Go to Home", Description = "Navigate to the home page", Icon = Icons.Material.Filled.Home, Category = "Navigation", Action = "navigate", Target = "/" },
+            new() { Name = "Data Viewer", Description = "Open the data viewer", Icon = Icons.Material.Filled.GridView, Category = "Navigation", Action = "navigate", Target = "/viewer" },
+            new() { Name = "Query Engine", Description = "Open the SQL query interface", Icon = Icons.Material.Filled.Code, Category = "Navigation", Action = "navigate", Target = "/query" },
+            new() { Name = "Schema Explorer", Description = "View and analyze data schemas", Icon = Icons.Material.Filled.AccountTree, Category = "Navigation", Action = "navigate", Target = "/schema" },
+            new() { Name = "Statistics", Description = "View data statistics and analytics", Icon = Icons.Material.Filled.Analytics, Category = "Navigation", Action = "navigate", Target = "/statistics" },
+
+            // File operations
+            new() { Name = "Open File", Description = "Open a parquet or delta file", Icon = Icons.Material.Filled.FolderOpen, Category = "File", Action = "open-file", Shortcut = "Ctrl+O" },
+            new() { Name = "Upload File", Description = "Upload a new file", Icon = Icons.Material.Filled.CloudUpload, Category = "File", Action = "upload-file" },
+            new() { Name = "Export Data", Description = "Export current data", Icon = Icons.Material.Filled.Download, Category = "File", Action = "export-data", Shortcut = "Ctrl+E" },
+            new() { Name = "Save Query", Description = "Save the current query", Icon = Icons.Material.Filled.Save, Category = "File", Action = "save-query", Shortcut = "Ctrl+S" },
+
+            // Data operations
+            new() { Name = "Find in Data", Description = "Search for specific values", Icon = Icons.Material.Filled.Search, Category = "Data", Action = "find-data", Shortcut = "Ctrl+F" },
+            new() { Name = "Filter Data", Description = "Apply filters to the data", Icon = Icons.Material.Filled.FilterList, Category = "Data", Action = "filter-data" },
+            new() { Name = "Sort Data", Description = "Sort data by columns", Icon = Icons.Material.Filled.Sort, Category = "Data", Action = "sort-data" },
+            new() { Name = "Group Data", Description = "Group data by fields", Icon = Icons.Material.Filled.GroupWork, Category = "Data", Action = "group-data" },
+
+            // Schema operations
+            new() { Name = "Show Schema", Description = "Display the data schema", Icon = Icons.Material.Filled.Schema, Category = "Schema", Action = "show-schema", Shortcut = "Alt+S" },
+            new() { Name = "Copy Schema", Description = "Copy schema definition", Icon = Icons.Material.Filled.ContentCopy, Category = "Schema", Action = "copy-schema" },
+            new() { Name = "Generate DDL", Description = "Generate SQL DDL", Icon = Icons.Material.Filled.Code, Category = "Schema", Action = "generate-ddl" },
+            new() { Name = "Validate Schema", Description = "Validate data against schema", Icon = Icons.Material.Filled.CheckCircle, Category = "Schema", Action = "validate-schema" },
+
+            // Delta Lake operations
+            new() { Name = "Time Travel", Description = "Navigate through Delta versions", Icon = Icons.Material.Filled.History, Category = "Delta", Action = "time-travel" },
+            new() { Name = "Compare Versions", Description = "Compare two Delta versions", Icon = Icons.Material.Filled.Compare, Category = "Delta", Action = "compare-versions" },
+            new() { Name = "Optimize Table", Description = "Run OPTIMIZE on Delta table", Icon = Icons.Material.Filled.Speed, Category = "Delta", Action = "optimize-table" },
+            new() { Name = "Vacuum Table", Description = "Run VACUUM on Delta table", Icon = Icons.Material.Filled.CleaningServices, Category = "Delta", Action = "vacuum-table" },
+
+            // View operations
+            new() { Name = "Refresh", Description = "Refresh current view", Icon = Icons.Material.Filled.Refresh, Category = "View", Action = "refresh", Shortcut = "F5" },
+            new() { Name = "Toggle Theme", Description = "Switch between light and dark theme", Icon = Icons.Material.Filled.Brightness6, Category = "View", Action = "toggle-theme", Shortcut = "Ctrl+Shift+T" },
+            new() { Name = "Full Screen", Description = "Toggle full screen mode", Icon = Icons.Material.Filled.Fullscreen, Category = "View", Action = "toggle-fullscreen", Shortcut = "F11" },
+            new() { Name = "Zoom In", Description = "Increase zoom level", Icon = Icons.Material.Filled.ZoomIn, Category = "View", Action = "zoom-in", Shortcut = "Ctrl++" },
+            new() { Name = "Zoom Out", Description = "Decrease zoom level", Icon = Icons.Material.Filled.ZoomOut, Category = "View", Action = "zoom-out", Shortcut = "Ctrl+-" },
+
+            // Help
+            new() { Name = "Help", Description = "Open help documentation", Icon = Icons.Material.Filled.Help, Category = "Help", Action = "help", Shortcut = "F1" },
+            new() { Name = "Keyboard Shortcuts", Description = "Show all keyboard shortcuts", Icon = Icons.Material.Filled.Keyboard, Category = "Help", Action = "shortcuts", Shortcut = "Ctrl+?" },
+            new() { Name = "About", Description = "About this application", Icon = Icons.Material.Filled.Info, Category = "Help", Action = "about" },
+        };
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        SearchTerm = e.Value?.ToString() ?? string.Empty;
+        FilterCommands();
+    }
+
+    private void FilterCommands()
+    {
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            FilteredCommands = AllCommands.Take(8).ToList();
+        }
+        else
+        {
+            var searchLower = SearchTerm.ToLower();
+            FilteredCommands = AllCommands
+                .Where(cmd => 
+                    cmd.Name.ToLower().Contains(searchLower) ||
+                    cmd.Description.ToLower().Contains(searchLower) ||
+                    cmd.Category.ToLower().Contains(searchLower))
+                .OrderBy(cmd => 
+                {
+                    // Prioritize exact matches at the beginning
+                    if (cmd.Name.ToLower().StartsWith(searchLower)) return 0;
+                    if (cmd.Description.ToLower().StartsWith(searchLower)) return 1;
+                    return 2;
+                })
+                .ToList();
+        }
+
+        SelectedIndex = FilteredCommands.Any() ? 0 : -1;
+        SelectedCommand = FilteredCommands.FirstOrDefault();
+        StateHasChanged();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                e.PreventDefault();
+                MoveSelection(1);
+                break;
+            case "ArrowUp":
+                e.PreventDefault();
+                MoveSelection(-1);
+                break;
+            case "Enter":
+                e.PreventDefault();
+                if (SelectedCommand != null)
+                {
+                    await ExecuteCommand(SelectedCommand);
+                }
+                break;
+            case "Escape":
+                e.PreventDefault();
+                Close();
+                break;
+        }
+    }
+
+    private void MoveSelection(int direction)
+    {
+        if (!FilteredCommands.Any()) return;
+
+        SelectedIndex += direction;
+        if (SelectedIndex < 0) SelectedIndex = FilteredCommands.Count - 1;
+        if (SelectedIndex >= FilteredCommands.Count) SelectedIndex = 0;
+
+        SelectedCommand = FilteredCommands[SelectedIndex];
+        StateHasChanged();
+    }
+
+    private void SelectCommand(CommandItem command)
+    {
+        SelectedCommand = command;
+        SelectedIndex = FilteredCommands.IndexOf(command);
+        StateHasChanged();
+    }
+
+    private async Task ExecuteCommand(CommandItem command)
+    {
+        await OnCommandExecuted.InvokeAsync(command);
+        Close();
+    }
+
+    private void OnFocus()
+    {
+        IsFocused = true;
+        StateHasChanged();
+    }
+
+    private void OnBlur()
+    {
+        // Delay to allow for click events
+        Task.Delay(200).ContinueWith(_ =>
+        {
+            IsFocused = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    public void Open()
+    {
+        IsOpen = true;
+        SearchTerm = string.Empty;
+        FilterCommands();
+        StateHasChanged();
+        
+        // Focus the input
+        Task.Delay(100).ContinueWith(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        });
+    }
+
+    public void Close()
+    {
+        IsOpen = false;
+        IsFocused = false;
+        SearchTerm = string.Empty;
+        SelectedCommand = null;
+        SelectedIndex = -1;
+        StateHasChanged();
+    }
+
+    private string GetCommandBarStyle()
+    {
+        return IsOpen ? "display: block;" : "display: none;";
+    }
+
+    private MarkupString GetHighlightedText(string text, string searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return new MarkupString(text);
+
+        var index = text.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase);
+        if (index == -1)
+            return new MarkupString(text);
+
+        var before = text.Substring(0, index);
+        var match = text.Substring(index, searchTerm.Length);
+        var after = text.Substring(index + searchTerm.Length);
+
+        return new MarkupString($"{before}<mark>{match}</mark>{after}");
+    }
+}

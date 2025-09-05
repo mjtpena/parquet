@@ -1,0 +1,421 @@
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Components.Layout
+@using MudBlazor
+
+<div class="inspector-panel" role="complementary" aria-label="Inspector">
+    <div class="panel-header">
+        <MudText Typo="Typo.h6" Class="panel-title">Inspector</MudText>
+        <MudIconButton Icon="Icons.Material.Filled.MoreVert" 
+                      Size="Size.Small" 
+                      Class="panel-menu-btn" />
+    </div>
+
+    <MudTabs Elevation="0" 
+             Position="Position.Top" 
+             PanelClass="panel-tab-content"
+             Class="inspector-tabs">
+        
+        <!-- Smart Insights Tab -->
+        <MudTabPanel Text="Insights" Icon="Icons.Material.Filled.Lightbulb">
+            <div class="smart-insights">
+                @if (Insights?.Any() == true)
+                {
+                    @foreach (var insight in Insights)
+                    {
+                        <MudAlert Severity="@GetInsightSeverity(insight.Type)" 
+                                 Icon="@GetInsightIcon(insight.Type)"
+                                 Class="insight-alert">
+                            <div class="insight-content">
+                                <MudText Typo="Typo.body2" Class="insight-title">@insight.Title</MudText>
+                                <MudText Typo="Typo.caption" Class="insight-description">@insight.Description</MudText>
+                                @if (insight.Actions?.Any() == true)
+                                {
+                                    <div class="insight-actions">
+                                        @foreach (var action in insight.Actions)
+                                        {
+                                            <MudButton Size="Size.Small" 
+                                                      Variant="Variant.Text" 
+                                                      StartIcon="@action.Icon"
+                                                      OnClick="() => ExecuteAction(action)">
+                                                @action.Label
+                                            </MudButton>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </MudAlert>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.Analytics" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No insights available</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Open a file to see smart insights</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+
+        <!-- Properties Tab -->
+        <MudTabPanel Text="Properties" Icon="Icons.Material.Filled.Info">
+            <div class="properties-panel">
+                @if (SelectedItem != null)
+                {
+                    <div class="property-section">
+                        <MudText Typo="Typo.subtitle2" Class="section-title">General</MudText>
+                        <div class="property-grid">
+                            <div class="property-item">
+                                <span class="property-key">Name</span>
+                                <span class="property-value">@SelectedItem.Name</span>
+                            </div>
+                            <div class="property-item">
+                                <span class="property-key">Type</span>
+                                <span class="property-value">@SelectedItem.Type</span>
+                            </div>
+                            <div class="property-item">
+                                <span class="property-key">Size</span>
+                                <span class="property-value">@SelectedItem.Size</span>
+                            </div>
+                            <div class="property-item">
+                                <span class="property-key">Modified</span>
+                                <span class="property-value">@SelectedItem.ModifiedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (SelectedItem.Metadata?.Any() == true)
+                    {
+                        <div class="property-section">
+                            <MudText Typo="Typo.subtitle2" Class="section-title">Metadata</MudText>
+                            <div class="property-grid">
+                                @foreach (var meta in SelectedItem.Metadata)
+                                {
+                                    <div class="property-item">
+                                        <span class="property-key">@meta.Key</span>
+                                        <span class="property-value">@meta.Value</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.InfoOutlined" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No item selected</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Select a file or field to view properties</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+
+        <!-- Statistics Tab -->
+        <MudTabPanel Text="Statistics" Icon="Icons.Material.Filled.BarChart">
+            <div class="statistics-panel">
+                @if (Statistics != null)
+                {
+                    <div class="stats-overview">
+                        <MudGrid>
+                            <MudItem xs="6">
+                                <div class="stat-card">
+                                    <MudText Typo="Typo.h4" Color="Color.Primary">@Statistics.RowCount.ToString("N0")</MudText>
+                                    <MudText Typo="Typo.caption">Rows</MudText>
+                                </div>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <div class="stat-card">
+                                    <MudText Typo="Typo.h4" Color="Color.Secondary">@Statistics.ColumnCount</MudText>
+                                    <MudText Typo="Typo.caption">Columns</MudText>
+                                </div>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <div class="stat-card">
+                                    <MudText Typo="Typo.h4" Color="Color.Tertiary">@FormatBytes(Statistics.DataSize)</MudText>
+                                    <MudText Typo="Typo.caption">Size</MudText>
+                                </div>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <div class="stat-card">
+                                    <MudText Typo="Typo.h4" Color="Color.Info">@Statistics.CompressionRatio.ToString("F1")x</MudText>
+                                    <MudText Typo="Typo.caption">Compression</MudText>
+                                </div>
+                            </MudItem>
+                        </MudGrid>
+                    </div>
+
+                    @if (Statistics.ColumnStats?.Any() == true)
+                    {
+                        <div class="column-stats">
+                            <MudText Typo="Typo.subtitle2" Class="section-title">Column Statistics</MudText>
+                            @foreach (var columnStat in Statistics.ColumnStats.Take(5))
+                            {
+                                <div class="column-stat-item">
+                                    <div class="column-header">
+                                        <MudIcon Icon="@GetFieldIcon(columnStat.DataType)" 
+                                                Size="Size.Small" 
+                                                Color="@GetFieldColor(columnStat.DataType)" />
+                                        <span class="column-name">@columnStat.ColumnName</span>
+                                    </div>
+                                    <div class="column-metrics">
+                                        <div class="metric">
+                                            <span class="metric-label">Null %</span>
+                                            <span class="metric-value">@columnStat.NullPercentage.ToString("F1")%</span>
+                                        </div>
+                                        <div class="metric">
+                                            <span class="metric-label">Unique</span>
+                                            <span class="metric-value">@columnStat.UniqueCount.ToString("N0")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.BarChart" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No statistics available</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Open a file to view statistics</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+
+        <!-- Validation Tab -->
+        <MudTabPanel Text="Validation" Icon="Icons.Material.Filled.CheckCircle">
+            <div class="validation-panel">
+                @if (ValidationResults?.Any() == true)
+                {
+                    <div class="validation-summary">
+                        <MudGrid>
+                            <MudItem xs="4">
+                                <div class="validation-stat passed">
+                                    <MudText Typo="Typo.h5">@ValidationResults.Count(v => v.IsValid)</MudText>
+                                    <MudText Typo="Typo.caption">Passed</MudText>
+                                </div>
+                            </MudItem>
+                            <MudItem xs="4">
+                                <div class="validation-stat warnings">
+                                    <MudText Typo="Typo.h5">@ValidationResults.Count(v => v.Severity == ValidationSeverity.Warning)</MudText>
+                                    <MudText Typo="Typo.caption">Warnings</MudText>
+                                </div>
+                            </MudItem>
+                            <MudItem xs="4">
+                                <div class="validation-stat errors">
+                                    <MudText Typo="Typo.h5">@ValidationResults.Count(v => v.Severity == ValidationSeverity.Error)</MudText>
+                                    <MudText Typo="Typo.caption">Errors</MudText>
+                                </div>
+                            </MudItem>
+                        </MudGrid>
+                    </div>
+
+                    <div class="validation-details">
+                        @foreach (var result in ValidationResults)
+                        {
+                            <div class="validation-item @GetValidationClass(result.Severity)">
+                                <div class="validation-header">
+                                    <MudIcon Icon="@GetValidationIcon(result.Severity)" 
+                                            Size="Size.Small" 
+                                            Color="@GetValidationColor(result.Severity)" />
+                                    <span class="validation-rule">@result.RuleName</span>
+                                </div>
+                                <div class="validation-message">@result.Message</div>
+                                @if (!string.IsNullOrEmpty(result.Location))
+                                {
+                                    <div class="validation-location">@result.Location</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.VerifiedUser" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No validation results</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Run validation to see results here</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+
+        <!-- History Tab -->
+        <MudTabPanel Text="History" Icon="Icons.Material.Filled.History">
+            <div class="history-panel">
+                @if (History?.Any() == true)
+                {
+                    <div class="history-list">
+                        @foreach (var item in History.Take(20))
+                        {
+                            <div class="history-item">
+                                <div class="history-icon">
+                                    <MudIcon Icon="@GetHistoryIcon(item.Action)" 
+                                            Size="Size.Small" 
+                                            Color="@GetHistoryColor(item.Action)" />
+                                </div>
+                                <div class="history-content">
+                                    <div class="history-action">@item.Description</div>
+                                    <div class="history-time">@item.Timestamp.ToString("HH:mm:ss")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="Icons.Material.Filled.History" Size="Size.Large" Color="Color.Tertiary" />
+                        <MudText Typo="Typo.body2" Color="Color.Tertiary">No recent activity</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">Your actions will appear here</MudText>
+                    </div>
+                }
+            </div>
+        </MudTabPanel>
+    </MudTabs>
+</div>
+
+@code {
+    [Parameter] public List<SmartInsight>? Insights { get; set; }
+    [Parameter] public SelectedItemInfo? SelectedItem { get; set; }
+    [Parameter] public DataStatistics? Statistics { get; set; }
+    [Parameter] public List<InspectorValidationResult>? ValidationResults { get; set; }
+    [Parameter] public List<HistoryItem>? History { get; set; }
+
+    [Parameter] public EventCallback<InsightAction> OnActionExecuted { get; set; }
+
+    private async Task ExecuteAction(InsightAction action)
+    {
+        await OnActionExecuted.InvokeAsync(action);
+    }
+
+    // Helper methods for insights
+    private Severity GetInsightSeverity(InsightType type)
+    {
+        return type switch
+        {
+            InsightType.Performance => Severity.Warning,
+            InsightType.DataQuality => Severity.Info,
+            InsightType.Schema => Severity.Normal,
+            InsightType.Cost => Severity.Success,
+            InsightType.Error => Severity.Error,
+            _ => Severity.Normal
+        };
+    }
+
+    private string GetInsightIcon(InsightType type)
+    {
+        return type switch
+        {
+            InsightType.Performance => Icons.Material.Filled.Speed,
+            InsightType.DataQuality => Icons.Material.Filled.HighQuality,
+            InsightType.Schema => Icons.Material.Filled.Schema,
+            InsightType.Cost => Icons.Material.Filled.AttachMoney,
+            InsightType.Error => Icons.Material.Filled.Error,
+            _ => Icons.Material.Filled.Lightbulb
+        };
+    }
+
+    // Helper methods for field types (reused from NavigatorPanel)
+    private string GetFieldIcon(string dataType)
+    {
+        return dataType.ToLower() switch
+        {
+            "string" or "varchar" or "text" => Icons.Material.Filled.TextFields,
+            "int" or "integer" or "bigint" or "smallint" => Icons.Material.Filled.Numbers,
+            "double" or "float" or "decimal" => Icons.Material.Filled.Functions,
+            "boolean" or "bool" => Icons.Material.Filled.ToggleOn,
+            "date" or "datetime" or "timestamp" => Icons.Material.Filled.CalendarToday,
+            _ => Icons.Material.Filled.Circle
+        };
+    }
+
+    private Color GetFieldColor(string dataType)
+    {
+        return dataType.ToLower() switch
+        {
+            "string" or "varchar" or "text" => Color.Success,
+            "int" or "integer" or "bigint" or "smallint" => Color.Primary,
+            "double" or "float" or "decimal" => Color.Info,
+            "boolean" or "bool" => Color.Error,
+            "date" or "datetime" or "timestamp" => Color.Secondary,
+            _ => Color.Default
+        };
+    }
+
+    // Helper methods for validation
+    private string GetValidationClass(ValidationSeverity severity)
+    {
+        return severity switch
+        {
+            ValidationSeverity.Error => "error",
+            ValidationSeverity.Warning => "warning",
+            ValidationSeverity.Info => "info",
+            _ => "success"
+        };
+    }
+
+    private string GetValidationIcon(ValidationSeverity severity)
+    {
+        return severity switch
+        {
+            ValidationSeverity.Error => Icons.Material.Filled.Error,
+            ValidationSeverity.Warning => Icons.Material.Filled.Warning,
+            ValidationSeverity.Info => Icons.Material.Filled.Info,
+            _ => Icons.Material.Filled.CheckCircle
+        };
+    }
+
+    private Color GetValidationColor(ValidationSeverity severity)
+    {
+        return severity switch
+        {
+            ValidationSeverity.Error => Color.Error,
+            ValidationSeverity.Warning => Color.Warning,
+            ValidationSeverity.Info => Color.Info,
+            _ => Color.Success
+        };
+    }
+
+    // Helper methods for history
+    private string GetHistoryIcon(string action)
+    {
+        return action.ToLower() switch
+        {
+            "open" => Icons.Material.Filled.FolderOpen,
+            "query" => Icons.Material.Filled.Search,
+            "export" => Icons.Material.Filled.Download,
+            "upload" => Icons.Material.Filled.Upload,
+            "filter" => Icons.Material.Filled.FilterList,
+            _ => Icons.Material.Filled.Circle
+        };
+    }
+
+    private Color GetHistoryColor(string action)
+    {
+        return action.ToLower() switch
+        {
+            "open" => Color.Primary,
+            "query" => Color.Info,
+            "export" => Color.Success,
+            "upload" => Color.Tertiary,
+            "filter" => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double len = bytes;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

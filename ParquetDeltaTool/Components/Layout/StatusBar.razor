@@ -1,0 +1,234 @@
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Components.Layout
+@using MudBlazor
+
+<div class="status-bar" role="status" aria-label="Application status">
+    <div class="status-section status-primary">
+        @if (CurrentFile != null)
+        {
+            <div class="status-item">
+                <MudIcon Icon="@GetFileIcon(CurrentFile.Format)" Size="Size.Small" Color="@GetFileIconColor(CurrentFile.Format)" />
+                <span class="status-text">@CurrentFile.FileName</span>
+            </div>
+            
+            <div class="status-separator"></div>
+            
+            <div class="status-item">
+                <MudIcon Icon="Icons.Material.Filled.TableRows" Size="Size.Small" />
+                <span class="status-text">@RowCount.ToString("N0") rows</span>
+            </div>
+            
+            <div class="status-separator"></div>
+            
+            <div class="status-item">
+                <MudIcon Icon="Icons.Material.Filled.ViewColumn" Size="Size.Small" />
+                <span class="status-text">@ColumnCount columns</span>
+            </div>
+            
+            <div class="status-separator"></div>
+            
+            <div class="status-item">
+                <MudIcon Icon="Icons.Material.Filled.Storage" Size="Size.Small" />
+                <span class="status-text">@FormatFileSize(FileSize)</span>
+            </div>
+        }
+        else
+        {
+            <div class="status-item">
+                <span class="status-text">Ready</span>
+            </div>
+        }
+    </div>
+
+    <div class="status-section status-center">
+        @if (IsLoading)
+        {
+            <div class="status-item loading">
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="status-text">@LoadingMessage</span>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(StatusMessage))
+        {
+            <div class="status-item @GetStatusClass(StatusType)">
+                <MudIcon Icon="@GetStatusIcon(StatusType)" Size="Size.Small" />
+                <span class="status-text">@StatusMessage</span>
+            </div>
+        }
+    </div>
+
+    <div class="status-section status-secondary">
+        @if (PerformanceMetrics != null)
+        {
+            <div class="status-item performance" title="Query execution time">
+                <MudIcon Icon="Icons.Material.Filled.Speed" Size="Size.Small" />
+                <span class="status-text">@PerformanceMetrics.ExecutionTime.ToString("F0")ms</span>
+            </div>
+            
+            <div class="status-separator"></div>
+            
+            <div class="status-item performance" title="Memory usage">
+                <MudIcon Icon="Icons.Material.Filled.Memory" Size="Size.Small" />
+                <span class="status-text">@FormatMemory(PerformanceMetrics.MemoryUsage)</span>
+            </div>
+            
+            <div class="status-separator"></div>
+        }
+
+        @if (ViewState != null)
+        {
+            <div class="status-item" title="Current view position">
+                <span class="status-text">@ViewState.CurrentRow:@ViewState.CurrentColumn</span>
+            </div>
+            
+            <div class="status-separator"></div>
+        }
+
+        <div class="status-item zoom">
+            <MudIconButton Icon="Icons.Material.Filled.ZoomOut" 
+                          Size="Size.Small" 
+                          OnClick="ZoomOut"
+                          Disabled="@(ZoomLevel <= 0.5)"
+                          title="Zoom out" />
+            <span class="status-text zoom-level">@((ZoomLevel * 100).ToString("F0"))%</span>
+            <MudIconButton Icon="Icons.Material.Filled.ZoomIn" 
+                          Size="Size.Small" 
+                          OnClick="ZoomIn"
+                          Disabled="@(ZoomLevel >= 2.0)"
+                          title="Zoom in" />
+        </div>
+
+        <div class="status-separator"></div>
+
+        <div class="status-item theme">
+            <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
+                          Size="Size.Small" 
+                          OnClick="ToggleTheme"
+                          title="Toggle theme" />
+        </div>
+
+        <div class="status-separator"></div>
+
+        <div class="status-item network" title="Connection status">
+            <MudIcon Icon="@GetNetworkIcon()" 
+                    Size="Size.Small" 
+                    Color="@GetNetworkColor()" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public FileMetadata? CurrentFile { get; set; }
+    [Parameter] public long RowCount { get; set; }
+    [Parameter] public int ColumnCount { get; set; }
+    [Parameter] public long FileSize { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string LoadingMessage { get; set; } = "Loading...";
+    [Parameter] public string StatusMessage { get; set; } = string.Empty;
+    [Parameter] public StatusType StatusType { get; set; } = StatusType.Info;
+    [Parameter] public PerformanceMetrics? PerformanceMetrics { get; set; }
+    [Parameter] public StatusBarViewState? ViewState { get; set; }
+    [Parameter] public double ZoomLevel { get; set; } = 1.0;
+    [Parameter] public bool IsDarkMode { get; set; }
+    [Parameter] public bool IsOnline { get; set; } = true;
+
+    [Parameter] public EventCallback OnZoomIn { get; set; }
+    [Parameter] public EventCallback OnZoomOut { get; set; }
+    [Parameter] public EventCallback OnToggleTheme { get; set; }
+
+    private async Task ZoomIn()
+    {
+        await OnZoomIn.InvokeAsync();
+    }
+
+    private async Task ZoomOut()
+    {
+        await OnZoomOut.InvokeAsync();
+    }
+
+    private async Task ToggleTheme()
+    {
+        await OnToggleTheme.InvokeAsync();
+    }
+
+    private string GetFileIcon(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Icons.Material.Filled.TableChart,
+            FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+            FileFormat.CSV => Icons.Material.Filled.Description,
+            FileFormat.JSON => Icons.Material.Filled.DataObject,
+            _ => Icons.Material.Filled.InsertDriveFile
+        };
+    }
+
+    private Color GetFileIconColor(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Color.Primary,
+            FileFormat.Delta => Color.Tertiary,
+            FileFormat.CSV => Color.Warning,
+            FileFormat.JSON => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private string GetStatusClass(StatusType type)
+    {
+        return type switch
+        {
+            StatusType.Success => "success",
+            StatusType.Warning => "warning",
+            StatusType.Error => "error",
+            StatusType.Info => "info",
+            _ => ""
+        };
+    }
+
+    private string GetStatusIcon(StatusType type)
+    {
+        return type switch
+        {
+            StatusType.Success => Icons.Material.Filled.CheckCircle,
+            StatusType.Warning => Icons.Material.Filled.Warning,
+            StatusType.Error => Icons.Material.Filled.Error,
+            StatusType.Info => Icons.Material.Filled.Info,
+            _ => Icons.Material.Filled.Circle
+        };
+    }
+
+    private string GetNetworkIcon()
+    {
+        return IsOnline ? Icons.Material.Filled.CloudDone : Icons.Material.Filled.CloudOff;
+    }
+
+    private Color GetNetworkColor()
+    {
+        return IsOnline ? Color.Success : Color.Error;
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double len = bytes;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string FormatMemory(long bytes)
+    {
+        if (bytes == 0) return "0 MB";
+        
+        double mb = bytes / (1024.0 * 1024.0);
+        return $"{mb:0.#} MB";
+    }
+}

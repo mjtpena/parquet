@@ -1,0 +1,460 @@
+@using ParquetDeltaTool.Models
+@using ParquetDeltaTool.Components.Layout
+@using ParquetDeltaTool.State
+@using MudBlazor
+@inject ApplicationState AppState
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="three-panel-layout">
+    <!-- Command Bar -->
+    <div class="command-bar-area">
+        <CommandBar @ref="CommandBarRef" 
+                   IsVisible="@ShowCommandBar" 
+                   OnCommandExecuted="HandleCommandExecuted" />
+    </div>
+
+    <!-- Navigator Panel -->
+    <div class="navigator-area @(_showNavigator ? "open" : "")">
+        <NavigatorPanel Files="@AppState.OpenFiles.ToList()"
+                       SelectedFile="@AppState.ActiveFile?.Metadata"
+                       CurrentSchema="@CurrentSchema"
+                       Versions="@DeltaVersions"
+                       Bookmarks="@Bookmarks"
+                       OnFileSelected="HandleFileSelected"
+                       OnFieldSelected="HandleFieldSelected"
+                       OnVersionSelected="HandleVersionSelected"
+                       OnBookmarkSelected="HandleBookmarkSelected" />
+    </div>
+
+    <!-- Main Canvas -->
+    <div class="main-canvas-area">
+        <div class="main-canvas">
+            <!-- Tab Bar -->
+            <div class="tab-bar">
+                @if (AppState.OpenFiles.Any())
+                {
+                    <MudTabs Elevation="0" 
+                             Position="Position.Top"
+                             PanelClass="tab-panel"
+                             Class="file-tabs"
+                             ActivePanelIndex="@GetActiveTabIndex()"
+                             ActivePanelIndexChanged="HandleTabChanged">
+                        @foreach (var fileState in AppState.OpenFiles)
+                        {
+                            <MudTabPanel Text="@GetTabLabel(fileState)" 
+                                        Icon="@GetFileIcon(fileState.Metadata.Format)"
+                                        ID="@fileState.Id.ToString()">
+                                <div class="tab-content">
+                                    @RenderContent(fileState)
+                                </div>
+                            </MudTabPanel>
+                        }
+                    </MudTabs>
+                }
+                else
+                {
+                    <div class="empty-canvas">
+                        <div class="empty-state-large">
+                            <MudIcon Icon="Icons.Material.Filled.FolderOpen" Size="Size.Large" Color="Color.Tertiary" />
+                            <MudText Typo="Typo.h5" Color="Color.Tertiary">No files open</MudText>
+                            <MudText Typo="Typo.body1" Color="Color.Tertiary">Upload or open a file to get started</MudText>
+                            <MudButton StartIcon="Icons.Material.Filled.Add" 
+                                      Variant="Variant.Filled" 
+                                      Color="Color.Primary"
+                                      Class="mt-4"
+                                      OnClick="OpenFileDialog">
+                                Open File
+                            </MudButton>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Inspector Panel -->
+    <div class="inspector-area @(_showInspector ? "open" : "")">
+        <InspectorPanel Insights="@SmartInsights"
+                       SelectedItem="@SelectedItemInfo"
+                       Statistics="@CurrentStatistics"
+                       ValidationResults="@ValidationResults"
+                       History="@RecentHistory"
+                       OnActionExecuted="HandleInsightActionExecuted" />
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar-area">
+        <StatusBar CurrentFile="@AppState.ActiveFile?.Metadata"
+                  RowCount="@CurrentRowCount"
+                  ColumnCount="@CurrentColumnCount"
+                  FileSize="@CurrentFileSize"
+                  IsLoading="@IsLoading"
+                  LoadingMessage="@LoadingMessage"
+                  StatusMessage="@StatusMessage"
+                  StatusType="@StatusType"
+                  PerformanceMetrics="@PerformanceMetrics"
+                  ViewState="@CurrentViewState"
+                  ZoomLevel="@ZoomLevel"
+                  IsDarkMode="@IsDarkMode"
+                  IsOnline="@IsOnline"
+                  OnZoomIn="HandleZoomIn"
+                  OnZoomOut="HandleZoomOut"
+                  OnToggleTheme="HandleToggleTheme" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool IsDarkMode { get; set; }
+    [Parameter] public EventCallback<bool> IsDarkModeChanged { get; set; }
+
+    private CommandBar? CommandBarRef;
+    private bool ShowCommandBar = false;
+    private bool _showNavigator = true;
+    private bool _showInspector = true;
+
+    // Current state
+    private TableSchema? CurrentSchema;
+    private List<DeltaVersion> DeltaVersions = new();
+    private List<Bookmark> Bookmarks = new();
+    private List<SmartInsight> SmartInsights = new();
+    private SelectedItemInfo? SelectedItemInfo;
+    private DataStatistics? CurrentStatistics;
+    private List<InspectorValidationResult> ValidationResults = new();
+    private List<HistoryItem> RecentHistory = new();
+
+    // Status bar state
+    private long CurrentRowCount = 0;
+    private int CurrentColumnCount = 0;
+    private long CurrentFileSize = 0;
+    private bool IsLoading = false;
+    private string LoadingMessage = "";
+    private string StatusMessage = "";
+    private StatusType StatusType = StatusType.Info;
+    private PerformanceMetrics? PerformanceMetrics;
+    private StatusBarViewState? CurrentViewState;
+    private double ZoomLevel = 1.0;
+    private bool IsOnline = true;
+
+    protected override void OnInitialized()
+    {
+        AppState.StateChanged += OnStateChanged;
+        LoadSampleData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await SetupKeyboardShortcuts();
+        }
+    }
+
+    private async Task SetupKeyboardShortcuts()
+    {
+        await JSRuntime.InvokeVoidAsync("setupKeyboardShortcuts", DotNetObjectReference.Create(this));
+    }
+
+    [JSInvokable]
+    public async Task HandleKeyboardShortcut(string shortcut)
+    {
+        switch (shortcut)
+        {
+            case "Ctrl+K":
+                await ToggleCommandBar();
+                break;
+            case "F5":
+                await RefreshCurrentView();
+                break;
+            case "Ctrl+Shift+T":
+                await HandleToggleTheme();
+                break;
+        }
+    }
+
+    private async Task ToggleCommandBar()
+    {
+        ShowCommandBar = !ShowCommandBar;
+        if (ShowCommandBar && CommandBarRef != null)
+        {
+            CommandBarRef.Open();
+        }
+        else if (CommandBarRef != null)
+        {
+            CommandBarRef.Close();
+        }
+        StateHasChanged();
+    }
+
+    private void OnStateChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            UpdateCurrentFileInfo();
+            StateHasChanged();
+        });
+    }
+
+    private void UpdateCurrentFileInfo()
+    {
+        if (AppState.ActiveFile != null)
+        {
+            CurrentRowCount = AppState.ActiveFile.Metadata.RowCount ?? 0;
+            CurrentColumnCount = AppState.ActiveFile.Metadata.Schema?.Fields?.Count ?? 0;
+            CurrentFileSize = AppState.ActiveFile.Metadata.FileSize;
+            CurrentSchema = AppState.ActiveFile.Metadata.Schema;
+            
+            // Update statistics
+            if (CurrentSchema != null)
+            {
+                CurrentStatistics = new DataStatistics
+                {
+                    RowCount = CurrentRowCount,
+                    ColumnCount = CurrentColumnCount,
+                    DataSize = CurrentFileSize,
+                    CompressionRatio = 4.2 // Example value
+                };
+            }
+        }
+    }
+
+    private async Task HandleCommandExecuted(CommandItem command)
+    {
+        ShowCommandBar = false;
+        
+        switch (command.Action)
+        {
+            case "navigate":
+                // Handle navigation
+                break;
+            case "open-file":
+                await OpenFileDialog();
+                break;
+            case "toggle-theme":
+                await HandleToggleTheme();
+                break;
+            case "refresh":
+                await RefreshCurrentView();
+                break;
+        }
+        
+        // Add to history
+        RecentHistory.Insert(0, new HistoryItem
+        {
+            Action = command.Action,
+            Description = command.Name,
+            Timestamp = DateTime.Now
+        });
+        
+        if (RecentHistory.Count > 20)
+        {
+            RecentHistory.RemoveAt(RecentHistory.Count - 1);
+        }
+    }
+
+    private async Task HandleFileSelected(FileMetadata file)
+    {
+        // Logic to switch to selected file
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleFieldSelected(Field field)
+    {
+        SelectedItemInfo = new SelectedItemInfo
+        {
+            Name = field.Name,
+            Type = field.DataType,
+            Size = "N/A",
+            ModifiedAt = DateTime.Now
+        };
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleVersionSelected(DeltaVersion version)
+    {
+        // Handle Delta Lake version selection
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleBookmarkSelected(Bookmark bookmark)
+    {
+        // Handle bookmark navigation
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleInsightActionExecuted(InsightAction action)
+    {
+        // Handle insight action execution
+        StatusMessage = $"Executed: {action.Label}";
+        StatusType = StatusType.Success;
+        StateHasChanged();
+        
+        // Clear status message after 3 seconds
+        _ = Task.Delay(3000).ContinueWith(_ =>
+        {
+            StatusMessage = "";
+            InvokeAsync(StateHasChanged);
+        });
+        
+        await Task.CompletedTask;
+    }
+
+    private int GetActiveTabIndex()
+    {
+        if (AppState.ActiveFile == null) return 0;
+        return AppState.OpenFiles.ToList().FindIndex(f => f.Id == AppState.ActiveFile.Id);
+    }
+
+    private async Task HandleTabChanged(int index)
+    {
+        var files = AppState.OpenFiles.ToList();
+        if (index >= 0 && index < files.Count)
+        {
+            AppState.SetActiveFile(files[index].Id);
+        }
+        await Task.CompletedTask;
+    }
+
+    private string GetTabLabel(FileState fileState)
+    {
+        return Path.GetFileNameWithoutExtension(fileState.Metadata.FileName);
+    }
+
+    private string GetFileIcon(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Icons.Material.Filled.TableChart,
+            FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+            FileFormat.CSV => Icons.Material.Filled.Description,
+            FileFormat.JSON => Icons.Material.Filled.DataObject,
+            _ => Icons.Material.Filled.InsertDriveFile
+        };
+    }
+
+    private RenderFragment RenderContent(FileState fileState)
+    {
+        return builder =>
+        {
+            // Render the appropriate content based on file type and view mode
+            builder.OpenComponent<DynamicComponent>(0);
+            builder.AddAttribute(1, "Type", typeof(object)); // Replace with actual component type
+            builder.AddAttribute(2, "Parameters", new Dictionary<string, object?>
+            {
+                ["FileState"] = fileState
+            });
+            builder.CloseComponent();
+        };
+    }
+
+    private async Task OpenFileDialog()
+    {
+        // Implement file open dialog
+        await Task.CompletedTask;
+    }
+
+    private async Task RefreshCurrentView()
+    {
+        IsLoading = true;
+        LoadingMessage = "Refreshing...";
+        StateHasChanged();
+        
+        // Simulate refresh
+        await Task.Delay(1000);
+        
+        IsLoading = false;
+        StatusMessage = "View refreshed";
+        StatusType = StatusType.Success;
+        StateHasChanged();
+        
+        // Clear status after 2 seconds
+        _ = Task.Delay(2000).ContinueWith(_ =>
+        {
+            StatusMessage = "";
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task HandleZoomIn()
+    {
+        ZoomLevel = Math.Min(2.0, ZoomLevel + 0.1);
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleZoomOut()
+    {
+        ZoomLevel = Math.Max(0.5, ZoomLevel - 0.1);
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleToggleTheme()
+    {
+        IsDarkMode = !IsDarkMode;
+        await IsDarkModeChanged.InvokeAsync(IsDarkMode);
+    }
+
+    private void LoadSampleData()
+    {
+        // Load sample insights
+        SmartInsights = new List<SmartInsight>
+        {
+            new()
+            {
+                Type = InsightType.Performance,
+                Title = "Small files detected",
+                Description = "847 files smaller than 1MB found. Consider running OPTIMIZE.",
+                Actions = new List<InsightAction>
+                {
+                    new() { Label = "Run OPTIMIZE", Icon = Icons.Material.Filled.Speed, ActionType = "optimize" }
+                }
+            },
+            new()
+            {
+                Type = InsightType.DataQuality,
+                Title = "High null percentage",
+                Description = "Column 'user_id' has 23% null values",
+                Actions = new List<InsightAction>
+                {
+                    new() { Label = "Investigate", Icon = Icons.Material.Filled.Search, ActionType = "investigate" }
+                }
+            }
+        };
+
+        // Load sample bookmarks
+        Bookmarks = new List<Bookmark>
+        {
+            new() { Name = "User Data Query", Path = "/queries/user-data.sql", Icon = Icons.Material.Filled.Code },
+            new() { Name = "Sales Report", Path = "/reports/sales.parquet", Icon = Icons.Material.Filled.Analytics }
+        };
+
+        // Load sample validation results
+        ValidationResults = new List<InspectorValidationResult>
+        {
+            new()
+            {
+                IsValid = true,
+                Severity = ValidationSeverity.Success,
+                RuleName = "Schema Validation",
+                Message = "All columns match expected schema",
+                Location = ""
+            },
+            new()
+            {
+                IsValid = false,
+                Severity = ValidationSeverity.Warning,
+                RuleName = "Null Check",
+                Message = "High null percentage in user_id column",
+                Location = "Column: user_id"
+            }
+        };
+    }
+
+    public void Dispose()
+    {
+        AppState.StateChanged -= OnStateChanged;
+    }
+}
