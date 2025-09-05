@@ -74,8 +74,8 @@ jobs:
       run: |
         # Update base href for GitHub Pages
         sed -i 's|<base href="/" />|<base href="/parquet/" />|g' dist/wwwroot/index.html
-        # Copy 404.html for SPA routing
-        cp dist/wwwroot/404.html dist/wwwroot/404.html
+        # Ensure 404.html exists for SPA routing
+        ls -la dist/wwwroot/404.html
         
     - name: Add .nojekyll file
       run: touch dist/wwwroot/.nojekyll
