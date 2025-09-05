@@ -1,0 +1,190 @@
+@inject IFileProcessor FileProcessor
+@inject ISnackbar Snackbar
+
+<MudPaper Class="pa-6" Elevation="0" Style="border: 2px dashed #ccc; border-radius: 8px;">
+    <MudFileUpload T="IBrowserFile" Accept="@_acceptedTypes" FilesChanged="HandleFileSelection" MaximumFileCount="10">
+        <ButtonTemplate>
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;">
+                @if (_isUploading)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6">Processing files...</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @(_currentFile != null ? $"Processing: {_currentFile}" : "")
+                    </MudText>
+                }
+                else
+                {
+                    <MudIcon Icon="Icons.Material.Filled.CloudUpload" 
+                             Size="Size.Large" 
+                             Color="Color.Secondary" />
+                    
+                    <MudText Typo="Typo.h6">
+                        Drop files here or click to upload
+                    </MudText>
+                    
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Supported formats: Parquet, CSV, JSON
+                    </MudText>
+                    
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="Icons.Material.Filled.Upload"
+                              Size="Size.Large"
+                              Class="mt-4">
+                        Choose Files
+                    </MudButton>
+                }
+            </MudStack>
+        </ButtonTemplate>
+    </MudFileUpload>
+    
+    @if (_selectedFiles.Any())
+    {
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.h6" GutterBottom="true">Selected Files</MudText>
+        
+        <MudList Dense="true">
+            @foreach (var file in _selectedFiles)
+            {
+                <MudListItem>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@GetFileIcon(DetectFileFormat(file.Name))" />
+                            <div>
+                                <MudText Typo="Typo.body1">@file.Name</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @FormatFileSize(file.Size) • @DetectFileFormat(file.Name)
+                                </MudText>
+                            </div>
+                        </MudStack>
+                        
+                        <MudIconButton Icon="Icons.Material.Filled.Close" 
+                                      Size="Size.Small" 
+                                      OnClick="@(() => RemoveFile(file))" />
+                    </MudStack>
+                </MudListItem>
+            }
+        </MudList>
+        
+        <MudButton Variant="Variant.Filled" 
+                  Color="Color.Primary" 
+                  StartIcon="Icons.Material.Filled.Upload"
+                  OnClick="ProcessFiles"
+                  Disabled="@_isUploading"
+                  Class="mt-4">
+            Process @_selectedFiles.Count File@(_selectedFiles.Count == 1 ? "" : "s")
+        </MudButton>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback<FileMetadata> OnFileUploaded { get; set; }
+
+    private bool _isUploading = false;
+    private string? _currentFile = null;
+    private List<IBrowserFile> _selectedFiles = new();
+    
+    private readonly string _acceptedTypes = ".parquet,.csv,.json,.jsonl";
+
+    private Task HandleFileSelection(IBrowserFile file)
+    {
+        _selectedFiles.Add(file);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void RemoveFile(IBrowserFile file)
+    {
+        _selectedFiles.Remove(file);
+        StateHasChanged();
+    }
+
+    private async Task ProcessFiles()
+    {
+        if (!_selectedFiles.Any() || _isUploading)
+            return;
+
+        _isUploading = true;
+        StateHasChanged();
+
+        try
+        {
+            foreach (var file in _selectedFiles.ToList())
+            {
+                _currentFile = file.Name;
+                StateHasChanged();
+
+                try
+                {
+                    // Convert IBrowserFile to Stream
+                    using var stream = file.OpenReadStream(maxAllowedSize: 500 * 1024 * 1024); // 500MB max
+                    
+                    // Detect file format
+                    var format = DetectFileFormat(file.Name);
+                    
+                    // Process the file
+                    var metadata = await FileProcessor.LoadFileAsync(stream, format);
+                    metadata.FileName = file.Name;
+                    
+                    // Notify parent component
+                    await OnFileUploaded.InvokeAsync(metadata);
+                    
+                    Snackbar.Add($"Successfully processed {file.Name}", Severity.Success);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Failed to process {file.Name}: {ex.Message}", Severity.Error);
+                }
+            }
+            
+            // Clear selected files after processing
+            _selectedFiles.Clear();
+        }
+        finally
+        {
+            _isUploading = false;
+            _currentFile = null;
+            StateHasChanged();
+        }
+    }
+
+    private FileFormat DetectFileFormat(string fileName)
+    {
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        return extension switch
+        {
+            ".parquet" => FileFormat.Parquet,
+            ".csv" => FileFormat.CSV,
+            ".json" or ".jsonl" => FileFormat.JSON,
+            _ => FileFormat.Parquet // Default
+        };
+    }
+
+    private string GetFileIcon(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Icons.Material.Filled.TableChart,
+            FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+            FileFormat.CSV => Icons.Material.Filled.GridOn,
+            FileFormat.JSON => Icons.Material.Filled.DataObject,
+            _ => Icons.Material.Filled.InsertDriveFile
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+        int counter = 0;
+        double number = bytes;
+        
+        while (Math.Round(number / 1024) >= 1)
+        {
+            number = number / 1024;
+            counter++;
+        }
+        
+        return $"{number:n1} {suffixes[counter]}";
+    }
+}

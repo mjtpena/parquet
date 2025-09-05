@@ -1,0 +1,69 @@
+﻿<MudNavMenu>
+    <MudText Typo="Typo.h6" Class="px-4 py-2">Navigation</MudText>
+    <MudDivider />
+    
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="Icons.Material.Filled.Home">
+        Home
+    </MudNavLink>
+    
+    <MudNavGroup Text="File Operations" Icon="Icons.Material.Filled.Folder" Expanded="true">
+        <MudNavLink Href="/upload" Icon="Icons.Material.Filled.Upload">
+            Upload Files
+        </MudNavLink>
+        <MudNavLink Href="/recent" Icon="Icons.Material.Filled.History">
+            Recent Files
+        </MudNavLink>
+        <MudNavLink Href="/cloud" Icon="Icons.Material.Filled.Cloud">
+            Cloud Storage
+        </MudNavLink>
+    </MudNavGroup>
+    
+    <MudNavGroup Text="Data Analysis" Icon="Icons.Material.Filled.Analytics" Expanded="true">
+        <MudNavLink Href="/viewer" Icon="Icons.Material.Filled.GridView">
+            Data Viewer
+        </MudNavLink>
+        <MudNavLink Href="/query" Icon="Icons.Material.Filled.Search">
+            Query Engine
+        </MudNavLink>
+        <MudNavLink Href="/schema" Icon="Icons.Material.Filled.Schema">
+            Schema Explorer
+        </MudNavLink>
+        <MudNavLink Href="/statistics" Icon="Icons.Material.Filled.BarChart">
+            Statistics
+        </MudNavLink>
+    </MudNavGroup>
+    
+    <MudNavGroup Text="Delta Lake" Icon="Icons.Material.Filled.ChangeHistory" Expanded="false">
+        <MudNavLink Href="/delta/history" Icon="Icons.Material.Filled.History">
+            Version History
+        </MudNavLink>
+        <MudNavLink Href="/delta/optimize" Icon="Icons.Material.Filled.Speed">
+            Optimize
+        </MudNavLink>
+        <MudNavLink Href="/delta/vacuum" Icon="Icons.Material.Filled.CleaningServices">
+            Vacuum
+        </MudNavLink>
+    </MudNavGroup>
+    
+    <MudNavGroup Text="Tools" Icon="Icons.Material.Filled.Build" Expanded="false">
+        <MudNavLink Href="/converter" Icon="Icons.Material.Filled.Transform">
+            Format Converter
+        </MudNavLink>
+        <MudNavLink Href="/validator" Icon="Icons.Material.Filled.CheckCircle">
+            Data Validator
+        </MudNavLink>
+        <MudNavLink Href="/generator" Icon="Icons.Material.Filled.AutoFixHigh">
+            Schema Generator
+        </MudNavLink>
+    </MudNavGroup>
+    
+    <MudDivider Class="my-2" />
+    
+    <MudNavLink Href="/settings" Icon="Icons.Material.Filled.Settings">
+        Settings
+    </MudNavLink>
+    
+    <MudNavLink Href="/about" Icon="Icons.Material.Filled.Info">
+        About
+    </MudNavLink>
+</MudNavMenu>

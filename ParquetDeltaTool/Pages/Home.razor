@@ -1,0 +1,213 @@
+﻿@page "/"
+@inject IFileProcessor FileProcessor
+@inject IStorageService StorageService
+@inject ApplicationState AppState
+
+<PageTitle>Parquet & Delta Lake Tool</PageTitle>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="pa-6" Elevation="2">
+            <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">
+                <MudIcon Icon="Icons.Material.Filled.Storage" Size="Size.Large" Class="mr-2" />
+                Parquet & Delta Lake Tool
+            </MudText>
+            <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Secondary" Class="mb-6">
+                Your comprehensive data engineering toolkit for Parquet files and Delta Lake tables
+            </MudText>
+            
+            <MudGrid Justify="Justify.Center">
+                <MudItem xs="12" md="8">
+                    <FileUploadComponent OnFileUploaded="HandleFileUploaded" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    @if (_recentFiles.Any())
+    {
+        <MudItem xs="12" lg="8">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h5" GutterBottom="true">
+                    <MudIcon Icon="Icons.Material.Filled.History" Class="mr-2" />
+                    Recent Files
+                </MudText>
+                
+                <MudTable Items="@_recentFiles" Hover="true" Striped="true" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Format</MudTh>
+                        <MudTh>Size</MudTh>
+                        <MudTh>Modified</MudTh>
+                        <MudTh>Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Name">
+                            <MudIcon Icon="@GetFileIcon(context.Format)" Class="mr-2" />
+                            @context.FileName
+                        </MudTd>
+                        <MudTd DataLabel="Format">
+                            <MudChip Size="Size.Small" Color="@GetFormatColor(context.Format)">
+                                @context.Format
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Size">@FormatFileSize(context.FileSize)</MudTd>
+                        <MudTd DataLabel="Modified">@context.ModifiedAt.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd DataLabel="Actions">
+                            <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
+                                <MudButton StartIcon="Icons.Material.Filled.Visibility" 
+                                          OnClick="@(() => OpenFile(context))"
+                                          Size="Size.Small">
+                                    View
+                                </MudButton>
+                                <MudButton StartIcon="Icons.Material.Filled.Delete" 
+                                          OnClick="@(() => DeleteFile(context.FileId))"
+                                          Color="Color.Error"
+                                          Size="Size.Small">
+                                    Delete
+                                </MudButton>
+                            </MudButtonGroup>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+    }
+
+    <MudItem xs="12" lg="4">
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.h5" GutterBottom="true">
+                <MudIcon Icon="Icons.Material.Filled.Info" Class="mr-2" />
+                Quick Start
+            </MudText>
+            
+            <MudList Clickable="true">
+                <MudListItem Icon="Icons.Material.Filled.Upload" Text="Upload Files" 
+                            Href="/upload" />
+                <MudListItem Icon="Icons.Material.Filled.Search" Text="Query Data" 
+                            Href="/query" />
+                <MudListItem Icon="Icons.Material.Filled.Schema" Text="Explore Schema" 
+                            Href="/schema" />
+                <MudListItem Icon="Icons.Material.Filled.BarChart" Text="View Statistics" 
+                            Href="/statistics" />
+            </MudList>
+
+            <MudDivider Class="my-4" />
+
+            <MudText Typo="Typo.h6" GutterBottom="true">Storage Usage</MudText>
+            <MudProgressLinear Value="@_storageUsagePercent" Color="Color.Primary" Class="my-2" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @FormatFileSize(_storageUsed) / @FormatFileSize(_storageTotal)
+            </MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<FileMetadata> _recentFiles = new();
+    private long _storageUsed = 0;
+    private long _storageTotal = 1024 * 1024 * 1024; // 1GB default
+    private double _storageUsagePercent = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRecentFiles();
+        await UpdateStorageInfo();
+    }
+
+    private async Task LoadRecentFiles()
+    {
+        try
+        {
+            _recentFiles = await StorageService.GetRecentFilesAsync(10);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            // TODO: Show error message
+            Console.WriteLine($"Failed to load recent files: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateStorageInfo()
+    {
+        try
+        {
+            _storageUsed = await StorageService.GetStorageUsageAsync();
+            _storageUsagePercent = Math.Round((_storageUsed / (double)_storageTotal) * 100, 1);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get storage info: {ex.Message}");
+        }
+    }
+
+    private async Task HandleFileUploaded(FileMetadata metadata)
+    {
+        AppState.OpenFile(metadata);
+        await LoadRecentFiles();
+        await UpdateStorageInfo();
+    }
+
+    private void OpenFile(FileMetadata metadata)
+    {
+        AppState.OpenFile(metadata);
+        // Navigate to viewer
+        // TODO: Add navigation service
+    }
+
+    private async Task DeleteFile(Guid fileId)
+    {
+        try
+        {
+            await StorageService.DeleteFileAsync(fileId);
+            await LoadRecentFiles();
+            await UpdateStorageInfo();
+        }
+        catch (Exception ex)
+        {
+            // TODO: Show error message
+            Console.WriteLine($"Failed to delete file: {ex.Message}");
+        }
+    }
+
+    private string GetFileIcon(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Icons.Material.Filled.TableChart,
+            FileFormat.Delta => Icons.Material.Filled.ChangeHistory,
+            FileFormat.CSV => Icons.Material.Filled.GridOn,
+            FileFormat.JSON => Icons.Material.Filled.DataObject,
+            _ => Icons.Material.Filled.InsertDriveFile
+        };
+    }
+
+    private Color GetFormatColor(FileFormat format)
+    {
+        return format switch
+        {
+            FileFormat.Parquet => Color.Primary,
+            FileFormat.Delta => Color.Success,
+            FileFormat.CSV => Color.Info,
+            FileFormat.JSON => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+        int counter = 0;
+        double number = bytes;
+        
+        while (Math.Round(number / 1024) >= 1)
+        {
+            number = number / 1024;
+            counter++;
+        }
+        
+        return $"{number:n1} {suffixes[counter]}";
+    }
+}
