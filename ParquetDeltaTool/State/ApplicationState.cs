@@ -110,7 +110,7 @@ public class UserPreferences
 public class Filter
 {
     public string Column { get; set; } = string.Empty;
-    public FilterOperator Operator { get; set; }
+    public DataFilterOperator Operator { get; set; }
     public object? Value { get; set; }
     public bool IsActive { get; set; } = true;
 }
@@ -144,7 +144,7 @@ public enum LayoutMode
     ThreePanel
 }
 
-public enum FilterOperator
+public enum DataFilterOperator
 {
     Equals,
     NotEquals,
