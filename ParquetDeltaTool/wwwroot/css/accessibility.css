@@ -1,0 +1,628 @@
+/* 
+   Accessibility Improvements
+   WCAG 2.1 AA compliant accessibility features
+*/
+
+/* ===== FOCUS MANAGEMENT ===== */
+/* Enhanced focus indicators */
+*:focus {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Interactive elements focus */
+.mud-button:focus-visible,
+.mud-icon-button:focus-visible,
+.mud-chip:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(var(--color-primary-500-rgb, 14, 165, 233), 0.2);
+}
+
+/* Form input focus */
+.mud-input-control:focus-within,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(var(--color-primary-500-rgb, 14, 165, 233), 0.2);
+}
+
+/* Navigation focus */
+.mud-nav-link:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    background-color: var(--color-primary-100);
+}
+
+/* Table focus */
+.mud-table-cell:focus-visible,
+td:focus-visible,
+th:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -2px;
+    background-color: var(--color-primary-50);
+}
+
+/* ===== SKIP LINKS ===== */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--color-primary-600);
+    color: white;
+    padding: var(--space-2) var(--space-4);
+    text-decoration: none;
+    border-radius: var(--radius);
+    font-weight: var(--font-semibold);
+    z-index: 9999;
+    transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+    top: 6px;
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+/* ===== SCREEN READER ONLY CONTENT ===== */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.sr-only-focusable:active,
+.sr-only-focusable:focus {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    padding: inherit !important;
+    margin: inherit !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+}
+
+/* ===== ARIA LIVE REGIONS ===== */
+.aria-live-polite {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.aria-live-assertive {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* ===== HIGH CONTRAST MODE ===== */
+@media (prefers-contrast: high) {
+    /* Increase contrast for all interactive elements */
+    .mud-button {
+        border: 2px solid currentColor;
+        font-weight: var(--font-bold);
+    }
+    
+    .mud-icon-button {
+        border: 2px solid currentColor;
+        border-radius: var(--radius);
+    }
+    
+    .mud-chip {
+        border: 2px solid currentColor;
+        font-weight: var(--font-bold);
+    }
+    
+    .mud-input {
+        border: 2px solid var(--color-neutral-700);
+    }
+    
+    .mud-card,
+    .mud-paper {
+        border: 2px solid var(--color-neutral-600);
+    }
+    
+    .mud-table {
+        border: 2px solid var(--color-neutral-600);
+    }
+    
+    .mud-table-cell {
+        border: 1px solid var(--color-neutral-600);
+    }
+    
+    /* Ensure sufficient color contrast */
+    .typography-muted {
+        color: var(--color-neutral-700) !important;
+    }
+    
+    .typography-subtle {
+        color: var(--color-neutral-800) !important;
+    }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Keep essential animations but reduce them */
+    .loading-spinner {
+        animation: none;
+        border-top-color: var(--color-primary-600);
+    }
+    
+    .loading-spinner::after {
+        content: '⟳';
+        font-size: var(--text-2xl);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+}
+
+/* ===== COLOR BLIND ACCESSIBILITY ===== */
+/* Use patterns and shapes in addition to colors */
+.status-success {
+    position: relative;
+}
+
+.status-success::before {
+    content: '✓';
+    margin-right: var(--space-1);
+    font-weight: var(--font-bold);
+}
+
+.status-error {
+    position: relative;
+}
+
+.status-error::before {
+    content: '✕';
+    margin-right: var(--space-1);
+    font-weight: var(--font-bold);
+}
+
+.status-warning {
+    position: relative;
+}
+
+.status-warning::before {
+    content: '⚠';
+    margin-right: var(--space-1);
+    font-weight: var(--font-bold);
+}
+
+.status-info {
+    position: relative;
+}
+
+.status-info::before {
+    content: 'ⓘ';
+    margin-right: var(--space-1);
+    font-weight: var(--font-bold);
+}
+
+/* ===== KEYBOARD NAVIGATION ===== */
+/* Keyboard navigation indicators */
+.keyboard-focused {
+    background-color: var(--color-primary-50);
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -2px;
+}
+
+/* Table keyboard navigation */
+.mud-table[role="grid"] .mud-table-cell[tabindex="0"] {
+    position: relative;
+}
+
+.mud-table[role="grid"] .mud-table-cell:focus {
+    background-color: var(--color-primary-100);
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -2px;
+    z-index: 1;
+}
+
+/* Menu keyboard navigation */
+.mud-menu .mud-list-item:focus,
+.mud-nav-menu .mud-nav-link:focus {
+    background-color: var(--color-primary-100);
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -2px;
+}
+
+/* ===== TOUCH TARGET SIZES ===== */
+/* Ensure minimum 44px touch targets */
+.mud-button,
+.mud-icon-button,
+.mud-chip,
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+}
+
+.mud-button-small {
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+    padding: var(--space-2) var(--space-4);
+}
+
+/* Links in text should be easily tappable */
+a {
+    min-height: var(--touch-target-min);
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-2);
+    margin: -var(--space-1) -var(--space-2);
+}
+
+/* ===== FORM ACCESSIBILITY ===== */
+/* Required field indicators */
+.required::after {
+    content: ' *';
+    color: var(--color-error-600);
+    font-weight: var(--font-bold);
+    margin-left: var(--space-1);
+}
+
+/* Error states */
+.mud-input-error {
+    border-color: var(--color-error-500);
+    background-color: var(--color-error-50);
+}
+
+.mud-input-error:focus {
+    outline-color: var(--color-error-500);
+    box-shadow: 0 0 0 4px rgba(var(--color-error-500-rgb, 239, 68, 68), 0.2);
+}
+
+/* Error messages */
+.field-error {
+    color: var(--color-error-700);
+    font-size: var(--text-sm);
+    margin-top: var(--space-1);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.field-error::before {
+    content: '⚠';
+    font-weight: var(--font-bold);
+}
+
+/* Help text */
+.field-help {
+    color: var(--color-neutral-600);
+    font-size: var(--text-sm);
+    margin-top: var(--space-1);
+    line-height: var(--leading-normal);
+}
+
+/* ===== TABLE ACCESSIBILITY ===== */
+/* Table headers */
+.mud-table th {
+    font-weight: var(--font-semibold);
+    background-color: var(--table-header-bg);
+}
+
+/* Sort indicators for screen readers */
+.sortable[aria-sort="ascending"]::after {
+    content: ' (sorted ascending)';
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.sortable[aria-sort="descending"]::after {
+    content: ' (sorted descending)';
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* Row selection indicators */
+.mud-table-row[aria-selected="true"] {
+    background-color: var(--color-primary-100);
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -2px;
+}
+
+/* ===== DIALOG ACCESSIBILITY ===== */
+/* Modal focus trap */
+.mud-dialog {
+    position: relative;
+}
+
+.mud-dialog:focus {
+    outline: none;
+}
+
+.mud-dialog .mud-dialog-title {
+    font-weight: var(--font-bold);
+    margin-bottom: var(--space-4);
+}
+
+/* ===== NOTIFICATION ACCESSIBILITY ===== */
+/* Toast notifications */
+.mud-snackbar {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.mud-snackbar-success {
+    border-left: 4px solid var(--color-success-500);
+}
+
+.mud-snackbar-error {
+    border-left: 4px solid var(--color-error-500);
+}
+
+.mud-snackbar-warning {
+    border-left: 4px solid var(--color-warning-500);
+}
+
+.mud-snackbar-info {
+    border-left: 4px solid var(--color-info-500);
+}
+
+/* ===== PROGRESS INDICATORS ===== */
+/* Progress bars with labels */
+.progress-with-label {
+    position: relative;
+}
+
+.progress-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-neutral-800);
+    text-shadow: 0 0 3px white;
+}
+
+/* ===== RESPONSIVE ACCESSIBILITY ===== */
+@media (max-width: 768px) {
+    /* Increase touch targets on mobile */
+    .mud-button,
+    .mud-icon-button,
+    .mud-chip,
+    button {
+        min-height: var(--touch-target-comfortable);
+        min-width: var(--touch-target-comfortable);
+        padding: var(--space-3) var(--space-6);
+    }
+    
+    /* Increase font sizes for better readability */
+    .typography-body-small {
+        font-size: var(--text-sm);
+    }
+    
+    .typography-caption {
+        font-size: var(--text-xs);
+    }
+}
+
+/* ===== DARK MODE ACCESSIBILITY ===== */
+@media (prefers-color-scheme: dark) {
+    /* Ensure sufficient contrast in dark mode */
+    *:focus-visible {
+        outline-color: var(--color-primary-400);
+    }
+    
+    .mud-button:focus-visible,
+    .mud-icon-button:focus-visible,
+    .mud-chip:focus-visible {
+        box-shadow: 0 0 0 4px rgba(var(--color-primary-400-rgb, 96, 165, 250), 0.3);
+    }
+    
+    .skip-link {
+        background: var(--color-primary-500);
+        color: var(--color-neutral-900);
+    }
+    
+    .keyboard-focused {
+        background-color: var(--color-primary-900);
+    }
+    
+    .mud-table[role="grid"] .mud-table-cell:focus {
+        background-color: var(--color-primary-900);
+        outline-color: var(--color-primary-400);
+    }
+    
+    .mud-menu .mud-list-item:focus,
+    .mud-nav-menu .mud-nav-link:focus {
+        background-color: var(--color-primary-900);
+        outline-color: var(--color-primary-400);
+    }
+    
+    .field-error {
+        color: var(--color-error-300);
+    }
+    
+    .field-help {
+        color: var(--color-neutral-400);
+    }
+    
+    @media (prefers-contrast: high) {
+        .typography-muted {
+            color: var(--color-neutral-300) !important;
+        }
+        
+        .typography-subtle {
+            color: var(--color-neutral-200) !important;
+        }
+    }
+}
+
+/* ===== PRINT ACCESSIBILITY ===== */
+@media print {
+    /* Ensure good contrast for printing */
+    * {
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    
+    /* Show URLs for links */
+    a::after {
+        content: " (" attr(href) ")";
+        font-size: 0.8em;
+        color: #666;
+    }
+    
+    /* Hide non-essential elements */
+    .mud-appbar,
+    .mud-drawer,
+    .mud-button,
+    .skip-link,
+    .fab {
+        display: none !important;
+    }
+    
+    /* Ensure page breaks */
+    .mud-card,
+    .mud-paper {
+        page-break-inside: avoid;
+        border: 1px solid #ccc !important;
+        margin: 1em 0;
+        padding: 1em;
+    }
+    
+    /* Table formatting */
+    .mud-table {
+        border-collapse: collapse;
+        border: 1px solid #000;
+    }
+    
+    .mud-table th,
+    .mud-table td {
+        border: 1px solid #000;
+        padding: 0.5em;
+    }
+    
+    .mud-table th {
+        background: #f0f0f0 !important;
+        font-weight: bold;
+    }
+}
+
+/* ===== ANNOUNCEMENTS FOR SCREEN READERS ===== */
+.loading-announcement,
+.success-announcement,
+.error-announcement,
+.navigation-announcement {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ===== LANGUAGE SUPPORT ===== */
+/* Right-to-left language support */
+[dir="rtl"] {
+    text-align: right;
+}
+
+[dir="rtl"] .mud-nav-link::before {
+    right: 0;
+    left: auto;
+    border-radius: var(--radius) 0 0 var(--radius);
+}
+
+[dir="rtl"] .mud-nav-link:hover {
+    transform: translateX(-var(--space-2));
+}
+
+/* ===== COGNITIVE ACCESSIBILITY ===== */
+/* Clear visual hierarchy */
+.section-divider {
+    border-bottom: 2px solid var(--color-neutral-200);
+    margin: var(--space-8) 0;
+    padding-bottom: var(--space-4);
+}
+
+/* Consistent spacing */
+.consistent-spacing > * + * {
+    margin-top: var(--space-4);
+}
+
+/* Clear error states */
+.error-summary {
+    background: var(--color-error-50);
+    border: 2px solid var(--color-error-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.error-summary h3 {
+    color: var(--color-error-700);
+    margin-bottom: var(--space-2);
+}
+
+.error-summary ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.error-summary li {
+    color: var(--color-error-700);
+    margin-bottom: var(--space-1);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.error-summary li::before {
+    content: '⚠';
+    font-weight: var(--font-bold);
+}

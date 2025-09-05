@@ -1,0 +1,665 @@
+/* 
+   Micro-interactions and Animations
+   Subtle animations that enhance user experience
+*/
+
+/* ===== BUTTON INTERACTIONS ===== */
+.mud-button {
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.mud-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left var(--transition-slow);
+}
+
+.mud-button:hover::before {
+    left: 100%;
+}
+
+.mud-button:active {
+    transform: scale(0.98);
+}
+
+.mud-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.mud-button-filled:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+/* ===== CARD HOVER EFFECTS ===== */
+.mud-card,
+.mud-paper {
+    transition: all var(--transition-fast);
+}
+
+.mud-card:hover,
+.mud-paper:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ===== ICON BUTTON RIPPLE ===== */
+.mud-icon-button {
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.mud-icon-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.mud-icon-button:active::after {
+    width: 120%;
+    height: 120%;
+}
+
+.mud-icon-button:hover {
+    transform: scale(1.05);
+}
+
+/* ===== INPUT FOCUS ANIMATIONS ===== */
+.mud-input-control {
+    transition: all var(--transition-fast);
+}
+
+.mud-input-control:focus-within {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-500-rgb, 14, 165, 233), 0.1);
+}
+
+.mud-input-control .mud-input-slot {
+    transition: all var(--transition-fast);
+}
+
+/* ===== CHIP INTERACTIONS ===== */
+.mud-chip {
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.mud-chip:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+}
+
+.mud-chip:active {
+    transform: scale(0.95);
+}
+
+/* ===== TABLE ROW ANIMATIONS ===== */
+.mud-table-body .mud-table-row {
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.mud-table-body .mud-table-row:hover {
+    transform: scale(1.002);
+    box-shadow: inset 4px 0 0 var(--color-primary-500);
+}
+
+/* ===== NAVIGATION LINK EFFECTS ===== */
+.mud-nav-link {
+    position: relative;
+    transition: all var(--transition-fast);
+}
+
+.mud-nav-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: var(--color-primary-500);
+    transition: width var(--transition-fast);
+    border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.mud-nav-link:hover::before {
+    width: 4px;
+}
+
+.mud-nav-link.active::before {
+    width: 4px;
+    background: var(--gradient-primary);
+}
+
+.mud-nav-link:hover {
+    transform: translateX(var(--space-2));
+}
+
+/* ===== PROGRESS BAR ANIMATIONS ===== */
+.mud-progress-linear {
+    overflow: hidden;
+}
+
+.mud-progress-linear .mud-progress-linear-bar {
+    position: relative;
+}
+
+.mud-progress-linear .mud-progress-linear-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: progressShine 2s linear infinite;
+}
+
+/* ===== ALERT SLIDE IN ===== */
+.mud-alert {
+    animation: alertSlideIn var(--transition-base) ease-out;
+    transform-origin: top;
+}
+
+/* ===== DIALOG ANIMATIONS ===== */
+.mud-dialog {
+    animation: dialogFadeIn var(--transition-base) ease-out;
+}
+
+.mud-overlay {
+    animation: overlayFadeIn var(--transition-base) ease-out;
+}
+
+/* ===== MENU DROPDOWN ANIMATIONS ===== */
+.mud-menu {
+    animation: menuSlideDown var(--transition-base) ease-out;
+    transform-origin: top;
+}
+
+.mud-menu .mud-list-item {
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.mud-menu .mud-list-item:hover {
+    transform: translateX(var(--space-2));
+    background-color: var(--color-primary-50);
+}
+
+/* ===== TOOLTIP ANIMATIONS ===== */
+.mud-tooltip {
+    animation: tooltipFadeIn var(--transition-fast) ease-out;
+}
+
+/* ===== LOADING ANIMATIONS ===== */
+.loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.loading-bounce {
+    animation: bounce 1s infinite;
+}
+
+.loading-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ===== PAGE TRANSITION ANIMATIONS ===== */
+.page-enter {
+    animation: pageEnter var(--transition-base) ease-out;
+}
+
+.page-exit {
+    animation: pageExit var(--transition-base) ease-in;
+}
+
+/* ===== STAGGERED ANIMATIONS ===== */
+.stagger-animation > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-animation > *:nth-child(2) { animation-delay: 100ms; }
+.stagger-animation > *:nth-child(3) { animation-delay: 200ms; }
+.stagger-animation > *:nth-child(4) { animation-delay: 300ms; }
+.stagger-animation > *:nth-child(5) { animation-delay: 400ms; }
+.stagger-animation > *:nth-child(6) { animation-delay: 500ms; }
+
+/* ===== KEYFRAME DEFINITIONS ===== */
+@keyframes alertSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scaleY(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+    }
+}
+
+@keyframes dialogFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes menuSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scaleY(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+    }
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pageExit {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes progressShine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(-25%);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+        transform: none;
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===== SCROLL ANIMATIONS ===== */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all var(--transition-slow);
+}
+
+.scroll-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.scroll-reveal-left {
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: all var(--transition-slow);
+}
+
+.scroll-reveal-left.revealed {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.scroll-reveal-right {
+    opacity: 0;
+    transform: translateX(30px);
+    transition: all var(--transition-slow);
+}
+
+.scroll-reveal-right.revealed {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.scroll-reveal-scale {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all var(--transition-slow);
+}
+
+.scroll-reveal-scale.revealed {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ===== INTERACTIVE ELEMENTS ===== */
+.interactive-element {
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.interactive-element:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.interactive-element:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ===== FLOATING ACTION BUTTON ===== */
+.fab {
+    position: fixed;
+    bottom: var(--space-6);
+    right: var(--space-6);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-fast);
+    z-index: var(--z-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-2xl);
+}
+
+.fab:active {
+    transform: scale(0.95);
+}
+
+/* ===== STATUS INDICATORS ===== */
+.status-indicator {
+    position: relative;
+    display: inline-block;
+}
+
+.status-indicator::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success-500);
+    animation: statusPulse 2s infinite;
+}
+
+.status-indicator.error::after {
+    background: var(--color-error-500);
+}
+
+.status-indicator.warning::after {
+    background: var(--color-warning-500);
+}
+
+@keyframes statusPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+}
+
+/* ===== TYPEWRITER EFFECT ===== */
+.typewriter {
+    overflow: hidden;
+    border-right: 3px solid var(--color-primary-500);
+    white-space: nowrap;
+    margin: 0 auto;
+    letter-spacing: 0.1em;
+    animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+    }
+}
+
+@keyframes blink-caret {
+    from, to {
+        border-color: transparent;
+    }
+    50% {
+        border-color: var(--color-primary-500);
+    }
+}
+
+/* ===== MORPHING SHAPES ===== */
+.morphing-circle {
+    border-radius: 50%;
+    transition: all var(--transition-slow);
+}
+
+.morphing-circle:hover {
+    border-radius: var(--radius-lg);
+    transform: rotate(45deg) scale(1.1);
+}
+
+/* ===== ELASTIC SCALE ===== */
+.elastic-scale {
+    transition: transform var(--transition-base);
+}
+
+.elastic-scale:hover {
+    animation: elasticScale 0.6s ease-out;
+}
+
+@keyframes elasticScale {
+    0% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scale(1.25);
+    }
+    40% {
+        transform: scale(0.95);
+    }
+    60% {
+        transform: scale(1.1);
+    }
+    80% {
+        transform: scale(0.98);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ===== PARTICLE EFFECTS ===== */
+.particle-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 50%;
+    animation: floatUp 3s ease-out infinite;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px) rotate(180deg);
+    }
+}
+
+/* ===== RESPONSIVE ANIMATIONS ===== */
+@media (max-width: 768px) {
+    /* Reduce animation intensity on mobile */
+    .mud-button:hover,
+    .mud-card:hover,
+    .mud-paper:hover,
+    .interactive-element:hover {
+        transform: none;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .mud-icon-button:hover {
+        transform: scale(1.02);
+    }
+    
+    .fab {
+        bottom: var(--space-4);
+        right: var(--space-4);
+        width: 48px;
+        height: 48px;
+    }
+}
+
+/* ===== ACCESSIBILITY CONSIDERATIONS ===== */
+@media (prefers-reduced-motion: reduce) {
+    /* Disable all animations for users who prefer reduced motion */
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .typewriter {
+        border-right: none;
+        animation: none;
+        white-space: normal;
+    }
+    
+    .status-indicator::after {
+        animation: none;
+    }
+    
+    .particle {
+        animation: none;
+        opacity: 0;
+    }
+}
+
+/* ===== HIGH CONTRAST MODE ===== */
+@media (prefers-contrast: high) {
+    .mud-button::before,
+    .mud-progress-linear .mud-progress-linear-bar::after {
+        display: none;
+    }
+    
+    .mud-button:hover,
+    .mud-icon-button:hover {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+    }
+}
+
+/* ===== DARK MODE ADJUSTMENTS ===== */
+@media (prefers-color-scheme: dark) {
+    .mud-button::before {
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    }
+    
+    .mud-icon-button::after {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .typewriter {
+        border-right-color: var(--color-primary-400);
+    }
+    
+    @keyframes blink-caret {
+        from, to {
+            border-color: transparent;
+        }
+        50% {
+            border-color: var(--color-primary-400);
+        }
+    }
+}
