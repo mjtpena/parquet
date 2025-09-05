@@ -141,11 +141,11 @@
                                    Max="8760"
                                    HelperText="Files older than this will be deleted" />
                     
-                    <MudSwitch @bind-Checked="dryRun" 
+                    <MudSwitch @bind-Value="dryRun" 
                              Label="Dry run (preview only)" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="parallelVacuum" 
+                    <MudSwitch @bind-Value="parallelVacuum" 
                              Label="Parallel processing" 
                              Color="Color.Primary" />
                     
@@ -162,7 +162,7 @@
                     
                     <MudText Typo="Typo.subtitle2">Safety Settings</MudText>
                     
-                    <MudSwitch @bind-Checked="skipHistoryCheck" 
+                    <MudSwitch @bind-Value="skipHistoryCheck" 
                              Label="Skip version history check" 
                              Color="Color.Warning"
                              Class="mud-warning" />

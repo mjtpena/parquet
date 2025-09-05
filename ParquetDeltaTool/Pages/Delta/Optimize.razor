@@ -143,7 +143,7 @@
                     <MudExpansionPanels Elevation="0" Outlined="true">
                         <MudExpansionPanel Text="File Compaction" IsExpanded="true">
                             <MudStack Spacing="2">
-                                <MudSwitch @bind-Checked="enableFileCompaction" 
+                                <MudSwitch @bind-Value="enableFileCompaction" 
                                          Label="Enable file compaction" 
                                          Color="Color.Primary" />
                                 
@@ -165,7 +165,7 @@
                         
                         <MudExpansionPanel Text="Z-Order Optimization">
                             <MudStack Spacing="2">
-                                <MudSwitch @bind-Checked="enableZOrder" 
+                                <MudSwitch @bind-Value="enableZOrder" 
                                          Label="Enable Z-Order clustering" 
                                          Color="Color.Primary" />
                                 
@@ -188,11 +188,11 @@
                         
                         <MudExpansionPanel Text="Advanced Options">
                             <MudStack Spacing="2">
-                                <MudSwitch @bind-Checked="autoCompact" 
+                                <MudSwitch @bind-Value="autoCompact" 
                                          Label="Auto-compact after optimization" 
                                          Color="Color.Primary" />
                                 
-                                <MudSwitch @bind-Checked="collectStatistics" 
+                                <MudSwitch @bind-Value="collectStatistics" 
                                          Label="Collect table statistics" 
                                          Color="Color.Primary" />
                                 

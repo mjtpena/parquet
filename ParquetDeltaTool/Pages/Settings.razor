@@ -49,15 +49,15 @@
                                    Max="100" 
                                    HelperText="Maximum number of recent files to remember" />
                     
-                    <MudSwitch @bind-Checked="settings.ShowWelcomeScreen" 
+                    <MudSwitch @bind-Value="settings.ShowWelcomeScreen" 
                              Label="Show welcome screen on startup" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="settings.AutoSaveSettings" 
+                    <MudSwitch @bind-Value="settings.AutoSaveSettings" 
                              Label="Auto-save settings" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="settings.EnableAnalytics" 
+                    <MudSwitch @bind-Value="settings.EnableAnalytics" 
                              Label="Enable usage analytics" 
                              Color="Color.Primary" />
                 </MudStack>
@@ -100,12 +100,12 @@
                         <MudSelectItem Value="CompressionType.Zstd">ZSTD (Best)</MudSelectItem>
                     </MudSelect>
                     
-                    <MudSwitch @bind-Checked="settings.EnableVirtualScrolling" 
+                    <MudSwitch @bind-Value="settings.EnableVirtualScrolling" 
                              Label="Enable virtual scrolling" 
                              Color="Color.Primary" 
                              HelperText="Improves performance with large datasets" />
                     
-                    <MudSwitch @bind-Checked="settings.CacheQueryResults" 
+                    <MudSwitch @bind-Value="settings.CacheQueryResults" 
                              Label="Cache query results" 
                              Color="Color.Primary" 
                              HelperText="Cache frequently used query results for faster access" />
@@ -148,7 +148,7 @@
                                    Max="20" 
                                    HelperText="Maximum storage space to use" />
                     
-                    <MudSwitch @bind-Checked="settings.AutoDeleteOldFiles" 
+                    <MudSwitch @bind-Value="settings.AutoDeleteOldFiles" 
                              Label="Auto-delete old files" 
                              Color="Color.Primary" />
                     
@@ -185,19 +185,19 @@
                                    Max="1000" 
                                    HelperText="Maximum number of queries to remember" />
                     
-                    <MudSwitch @bind-Checked="settings.EnableSyntaxHighlighting" 
+                    <MudSwitch @bind-Value="settings.EnableSyntaxHighlighting" 
                              Label="Enable syntax highlighting" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="settings.EnableAutoComplete" 
+                    <MudSwitch @bind-Value="settings.EnableAutoComplete" 
                              Label="Enable auto-complete" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="settings.ShowQueryPlan" 
+                    <MudSwitch @bind-Value="settings.ShowQueryPlan" 
                              Label="Show query execution plans" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="settings.EnableQueryValidation" 
+                    <MudSwitch @bind-Value="settings.EnableQueryValidation" 
                              Label="Enable query validation" 
                              Color="Color.Primary" />
                 </MudStack>
@@ -231,11 +231,11 @@
                                    Max="10000" 
                                    HelperText="Maximum data points to display in charts" />
                     
-                    <MudSwitch @bind-Checked="settings.EnableInteractiveCharts" 
+                    <MudSwitch @bind-Value="settings.EnableInteractiveCharts" 
                              Label="Enable interactive charts" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="settings.ShowDataLabels" 
+                    <MudSwitch @bind-Value="settings.ShowDataLabels" 
                              Label="Show data labels on charts" 
                              Color="Color.Primary" />
                 </MudStack>
@@ -262,11 +262,11 @@
                                 Variant="Variant.Outlined" 
                                 MaxLength="1" />
                     
-                    <MudSwitch @bind-Checked="settings.ExportWithHeaders" 
+                    <MudSwitch @bind-Value="settings.ExportWithHeaders" 
                              Label="Export with column headers" 
                              Color="Color.Primary" />
                     
-                    <MudSwitch @bind-Checked="settings.CompressExports" 
+                    <MudSwitch @bind-Value="settings.CompressExports" 
                              Label="Compress exported files" 
                              Color="Color.Primary" />
                     

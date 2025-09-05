@@ -1,8 +1,23 @@
 @inject IFileProcessor FileProcessor
+@inject IStorageService StorageService
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 
-<MudPaper Class="pa-6" Elevation="0" Style="border: 2px dashed #ccc; border-radius: 8px;">
-    <MudFileUpload T="IBrowserFile" Accept="@_acceptedTypes" FilesChanged="HandleFileSelection" MaximumFileCount="10">
+<div class="@GetUploadAreaClasses()" 
+     style="@GetUploadAreaStyle()"
+     @ondrop="HandleDrop" 
+     @ondragover="HandleDragOver" 
+     @ondragenter="HandleDragEnter" 
+     @ondragleave="HandleDragLeave"
+     @ondragover:preventDefault="true"
+     @ondrop:preventDefault="true">
+    
+    <MudFileUpload T="IBrowserFile" 
+                   Accept="@_acceptedTypes" 
+                   FilesChanged="HandleFileSelection" 
+                   MaximumFileCount="10"
+                   Hidden="true"
+                   @ref="_fileUpload">
         <ButtonTemplate>
             <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;">
                 @if (_isUploading)
@@ -76,27 +91,96 @@
             Process @_selectedFiles.Count File@(_selectedFiles.Count == 1 ? "" : "s")
         </MudButton>
     }
-</MudPaper>
+</div>
 
 @code {
     [Parameter] public EventCallback<FileMetadata> OnFileUploaded { get; set; }
 
     private bool _isUploading = false;
+    private bool _isDragOver = false;
     private string? _currentFile = null;
+    private int _currentFileIndex = 0;
+    private int _totalFiles = 0;
+    private double _currentProgress = 0;
     private List<IBrowserFile> _selectedFiles = new();
+    private List<string> _validationErrors = new();
     
-    private readonly string _acceptedTypes = ".parquet,.csv,.json,.jsonl";
+    private readonly string _acceptedTypes = ".parquet,.csv,.json,.jsonl,.ndjson,.avro,.orc";
+    private readonly long _maxFileSize = 2L * 1024 * 1024 * 1024; // 2GB
+    private readonly HashSet<string> _supportedExtensions = new() { ".parquet", ".csv", ".json", ".jsonl", ".ndjson", ".avro", ".orc" };
+    
+    private MudFileUpload<IBrowserFile> _fileUpload = null!;
 
-    private Task HandleFileSelection(IBrowserFile file)
+    private async Task HandleFileSelection(IBrowserFile file)
     {
+        await AddFileWithValidation(file);
+    }
+
+    private async Task AddFileWithValidation(IBrowserFile file)
+    {
+        _validationErrors.Clear();
+
+        // Validate file
+        var isValid = ValidateFile(file);
+        if (!isValid)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        // Check for duplicates
+        if (_selectedFiles.Any(f => f.Name == file.Name && f.Size == file.Size))
+        {
+            Snackbar.Add($"File '{file.Name}' is already selected", Severity.Warning);
+            return;
+        }
+
         _selectedFiles.Add(file);
+        Snackbar.Add($"Added {file.Name} to upload queue", Severity.Info);
         StateHasChanged();
-        return Task.CompletedTask;
+    }
+
+    private bool ValidateFile(IBrowserFile file)
+    {
+        var isValid = true;
+
+        // Check file size
+        if (file.Size > _maxFileSize)
+        {
+            _validationErrors.Add($"{file.Name}: File size ({FormatFileSize(file.Size)}) exceeds maximum allowed size (2GB)");
+            isValid = false;
+        }
+
+        if (file.Size == 0)
+        {
+            _validationErrors.Add($"{file.Name}: File is empty");
+            isValid = false;
+        }
+
+        // Check file extension
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        if (string.IsNullOrEmpty(extension) || !_supportedExtensions.Contains(extension))
+        {
+            _validationErrors.Add($"{file.Name}: Unsupported file format. Supported formats: {string.Join(", ", _supportedExtensions)}");
+            isValid = false;
+        }
+
+        // Show validation errors
+        if (!isValid)
+        {
+            foreach (var error in _validationErrors)
+            {
+                Snackbar.Add(error, Severity.Error);
+            }
+        }
+
+        return isValid;
     }
 
     private void RemoveFile(IBrowserFile file)
     {
         _selectedFiles.Remove(file);
+        Snackbar.Add($"Removed {file.Name} from upload queue", Severity.Info);
         StateHasChanged();
     }
 
@@ -106,36 +190,105 @@
             return;
 
         _isUploading = true;
+        _totalFiles = _selectedFiles.Count;
+        _currentFileIndex = 0;
+        _currentProgress = 0;
         StateHasChanged();
+
+        var successCount = 0;
+        var failedFiles = new List<string>();
 
         try
         {
-            foreach (var file in _selectedFiles.ToList())
+            for (var i = 0; i < _selectedFiles.Count; i++)
             {
+                var file = _selectedFiles[i];
                 _currentFile = file.Name;
+                _currentFileIndex = i + 1;
+                _currentProgress = 0;
                 StateHasChanged();
 
                 try
                 {
-                    // Convert IBrowserFile to Stream
-                    using var stream = file.OpenReadStream(maxAllowedSize: 500 * 1024 * 1024); // 500MB max
+                    // Read file content
+                    using var stream = file.OpenReadStream(maxAllowedSize: _maxFileSize);
+                    using var memoryStream = new MemoryStream();
                     
-                    // Detect file format
+                    // Copy with progress tracking
+                    var buffer = new byte[81920]; // 80KB buffer
+                    int bytesRead;
+                    long totalBytesRead = 0;
+                    
+                    while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
+                    {
+                        await memoryStream.WriteAsync(buffer, 0, bytesRead);
+                        totalBytesRead += bytesRead;
+                        _currentProgress = (double)totalBytesRead / file.Size * 100;
+                        StateHasChanged();
+                    }
+
+                    var fileBytes = memoryStream.ToArray();
+
+                    // Store in IndexedDB
+                    var fileId = Guid.NewGuid();
                     var format = DetectFileFormat(file.Name);
                     
-                    // Process the file
-                    var metadata = await FileProcessor.LoadFileAsync(stream, format);
-                    metadata.FileName = file.Name;
-                    
-                    // Notify parent component
-                    await OnFileUploaded.InvokeAsync(metadata);
-                    
-                    Snackbar.Add($"Successfully processed {file.Name}", Severity.Success);
+                    // Create metadata
+                    var metadata = new FileMetadata
+                    {
+                        FileId = fileId,
+                        FileName = file.Name,
+                        FileSize = file.Size,
+                        Format = format,
+                        ModifiedAt = DateTime.Now,
+                        RowCount = 0, // Will be updated during processing
+                        CreatedAt = DateTime.Now
+                    };
+
+                    // Store file using JavaScript storage service
+                    await JSRuntime.InvokeVoidAsync("storeFile", fileId.ToString(), file.Name, fileBytes, metadata);
+
+                    // Process file metadata and schema
+                    try
+                    {
+                        var processedMetadata = await FileProcessor.LoadFileAsync(new MemoryStream(fileBytes), format);
+                        processedMetadata.FileId = fileId;
+                        processedMetadata.FileName = file.Name;
+                        processedMetadata.FileSize = file.Size;
+                        
+                        // Update stored metadata with processed information
+                        await JSRuntime.InvokeVoidAsync("storeFile", fileId.ToString(), file.Name, fileBytes, processedMetadata);
+                        
+                        // Notify parent component
+                        await OnFileUploaded.InvokeAsync(processedMetadata);
+                        
+                        successCount++;
+                        Snackbar.Add($"✅ Successfully processed {file.Name}", Severity.Success);
+                    }
+                    catch (Exception processingEx)
+                    {
+                        // File was stored but processing failed
+                        await OnFileUploaded.InvokeAsync(metadata);
+                        Snackbar.Add($"⚠️ {file.Name} uploaded but processing failed: {processingEx.Message}", Severity.Warning);
+                        successCount++;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Snackbar.Add($"Failed to process {file.Name}: {ex.Message}", Severity.Error);
+                    failedFiles.Add($"{file.Name}: {ex.Message}");
+                    Snackbar.Add($"❌ Failed to process {file.Name}: {ex.Message}", Severity.Error);
                 }
+            }
+            
+            // Show summary
+            if (successCount > 0)
+            {
+                Snackbar.Add($"Successfully processed {successCount} of {_totalFiles} files", Severity.Success);
+            }
+            
+            if (failedFiles.Any())
+            {
+                Snackbar.Add($"Failed to process {failedFiles.Count} files", Severity.Error);
             }
             
             // Clear selected files after processing
@@ -145,6 +298,9 @@
         {
             _isUploading = false;
             _currentFile = null;
+            _currentFileIndex = 0;
+            _totalFiles = 0;
+            _currentProgress = 0;
             StateHasChanged();
         }
     }
@@ -186,5 +342,63 @@
         }
         
         return $"{number:n1} {suffixes[counter]}";
+    }
+
+    // Drag and drop event handlers
+    private Task HandleDrop(DragEventArgs e)
+    {
+        _isDragOver = false;
+        StateHasChanged();
+        
+        if (_isUploading) return Task.CompletedTask;
+
+        // For now, just show a message that drag and drop is not fully implemented
+        // Real implementation would require custom JavaScript interop to handle file drops
+        Snackbar.Add("Drag and drop detected! Please use the 'Choose Files' button for now.", Severity.Info);
+        return Task.CompletedTask;
+    }
+
+    private void HandleDragOver(DragEventArgs e)
+    {
+        e.DataTransfer.DropEffect = "copy";
+    }
+
+    private void HandleDragEnter(DragEventArgs e)
+    {
+        _isDragOver = true;
+        StateHasChanged();
+    }
+
+    private void HandleDragLeave(DragEventArgs e)
+    {
+        _isDragOver = false;
+        StateHasChanged();
+    }
+
+    // Styling methods for drag and drop area
+    private string GetUploadAreaClasses()
+    {
+        var classes = "pa-6 ma-2 rounded-lg border-2 border-dashed text-center cursor-pointer transition-all";
+
+        if (_isDragOver)
+        {
+            classes += " mud-elevation-4";
+        }
+        else
+        {
+            classes += " hover:mud-elevation-2";
+        }
+
+        return classes;
+    }
+
+    private string GetUploadAreaStyle()
+    {
+        if (_isDragOver)
+        {
+            return "background-color: var(--mud-palette-primary-lighten); border-color: var(--mud-palette-primary);";
+        }
+        
+        return "border-color: var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);";
     }
 }

@@ -112,7 +112,7 @@
                             <MudCardContent>
                                 <MudStack Spacing="2">
                                     <MudTextField @bind-Value="csvDelimiter" Label="Delimiter" Variant="Variant.Outlined" />
-                                    <MudSwitch @bind-Checked="includeHeader" Label="Include Header Row" />
+                                    <MudSwitch @bind-Value="includeHeader" Label="Include Header Row" />
                                     <MudTextField @bind-Value="csvQuoteChar" Label="Quote Character" Variant="Variant.Outlined" />
                                 </MudStack>
                             </MudCardContent>
@@ -133,7 +133,7 @@
                                         <MudSelectItem Value="JsonFormatType.Lines">JSON Lines (NDJSON)</MudSelectItem>
                                         <MudSelectItem Value="JsonFormatType.Values">Values (Array of Arrays)</MudSelectItem>
                                     </MudSelect>
-                                    <MudSwitch @bind-Checked="jsonPrettyPrint" Label="Pretty Print" />
+                                    <MudSwitch @bind-Value="jsonPrettyPrint" Label="Pretty Print" />
                                 </MudStack>
                             </MudCardContent>
                         </MudCard>
