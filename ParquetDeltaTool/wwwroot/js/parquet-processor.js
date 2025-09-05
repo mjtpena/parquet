@@ -1,6 +1,7 @@
 // Parquet WASM Processor
-// Real implementation using Apache Arrow WASM bindings
+// Real implementation using Apache Arrow WASM bindings and parquet-wasm
 import * as Arrow from 'apache-arrow';
+import * as parquet from 'parquet-wasm';
 
 class ParquetProcessor {
     constructor() {
@@ -12,14 +13,19 @@ class ParquetProcessor {
     async initialize() {
         if (!this.initialized) {
             try {
-                console.log('Initializing Apache Arrow WASM processor...');
+                console.log('Initializing Parquet and Arrow WASM processors...');
                 
-                // Use imported Arrow module
+                // Use imported modules
                 this.arrow = Arrow;
-                console.log('Apache Arrow WASM initialized successfully');
+                this.parquet = parquet;
+                
+                // Initialize parquet-wasm
+                await this.parquet.default();
+                
+                console.log('Parquet and Arrow WASM initialized successfully');
                 this.initialized = true;
             } catch (error) {
-                console.warn('Failed to initialize Arrow WASM, falling back to mock implementation:', error);
+                console.warn('Failed to initialize Parquet WASM, falling back to enhanced mock implementation:', error);
                 // Try to load Arrow from CDN as fallback
                 if (!window.Arrow) {
                     await this.loadArrowWASM();
@@ -53,12 +59,42 @@ class ParquetProcessor {
         
         console.log(`Parsing Parquet metadata for ${bytes.length} bytes`);
         
-        // Try to use real Arrow WASM if available
-        if (this.arrow) {
+        // Try to use real Parquet WASM if available
+        if (this.parquet && this.arrow) {
             try {
                 const uint8Array = new Uint8Array(bytes);
                 
-                // Try to read as Arrow IPC/Feather format first
+                // Check if this looks like a Parquet file (magic bytes)
+                if (uint8Array.length >= 4) {
+                    const magicBytes = Array.from(uint8Array.slice(0, 4))
+                        .map(b => String.fromCharCode(b))
+                        .join('');
+                    
+                    if (magicBytes === 'PAR1') {
+                        console.log('Detected Parquet file, reading with parquet-wasm');
+                        
+                        // Read Parquet file with parquet-wasm
+                        const parquetFile = this.parquet.readParquet(uint8Array);
+                        const table = this.arrow.tableFromIPC(parquetFile.intoIPCStream());
+                        
+                        return {
+                            version: "2.0",
+                            createdBy: "parquet-wasm",
+                            numRows: table.length,
+                            schema: this.convertArrowSchema(table.schema),
+                            fileSize: bytes.length,
+                            compressionType: "SNAPPY",
+                            keyValueMetadata: table.schema.metadata || {},
+                            rowGroups: [{
+                                numRows: table.length,
+                                totalByteSize: bytes.length,
+                                columns: this.extractColumnMetadata(table)
+                            }]
+                        };
+                    }
+                }
+                
+                // Try to read as Arrow IPC/Feather format
                 try {
                     const table = this.arrow.tableFromIPC(uint8Array);
                     if (table) {
@@ -68,7 +104,7 @@ class ParquetProcessor {
                             numRows: table.length,
                             schema: this.convertArrowSchema(table.schema),
                             fileSize: bytes.length,
-                            compressionType: "SNAPPY",
+                            compressionType: "NONE",
                             keyValueMetadata: {
                                 "apache-arrow": table.schema.version || "1.0",
                                 "creator": "parquet-delta-tool"
@@ -76,25 +112,11 @@ class ParquetProcessor {
                         };
                     }
                 } catch (ipcError) {
-                    console.log('Not an Arrow IPC file, trying Parquet detection');
-                }
-                
-                // Check if this looks like a Parquet file (magic bytes)
-                if (uint8Array.length >= 4) {
-                    const magicBytes = Array.from(uint8Array.slice(0, 4))
-                        .map(b => String.fromCharCode(b))
-                        .join('');
-                    
-                    if (magicBytes === 'PAR1') {
-                        console.log('Detected Parquet file format');
-                        // This is a real Parquet file - return enhanced mock metadata
-                        // In a real implementation, we'd use parquet-wasm here
-                        return await this.generateEnhancedParquetMetadata(uint8Array);
-                    }
+                    console.log('Not an Arrow IPC file');
                 }
                 
             } catch (error) {
-                console.warn('Failed to parse with Arrow, using mock data:', error);
+                console.warn('Failed to parse with Parquet WASM, using enhanced fallback:', error);
             }
         }
         
@@ -193,6 +215,65 @@ class ParquetProcessor {
                 "creator": "parquet-delta-tool"
             }
         };
+    }
+
+    extractColumnMetadata(table) {
+        const columns = [];
+        for (let i = 0; i < table.schema.fields.length; i++) {
+            const field = table.schema.fields[i];
+            const column = table.getChildAt(i);
+            
+            columns.push({
+                name: field.name,
+                compression: "SNAPPY", // Default assumption
+                encodings: ["PLAIN", "DICT"],
+                compressedSize: Math.floor(table.length * 8), // Rough estimate
+                uncompressedSize: Math.floor(table.length * 12),
+                statistics: this.computeColumnStatistics(column, field)
+            });
+        }
+        return columns;
+    }
+
+    computeColumnStatistics(column, field) {
+        try {
+            const values = [];
+            let nullCount = 0;
+            
+            for (let i = 0; i < column.length; i++) {
+                const value = column.get(i);
+                if (value === null || value === undefined) {
+                    nullCount++;
+                } else {
+                    values.push(value);
+                }
+            }
+            
+            const stats = {
+                nullCount: nullCount,
+                distinctCount: new Set(values).size
+            };
+            
+            if (values.length > 0) {
+                if (typeof values[0] === 'number') {
+                    stats.min = Math.min(...values);
+                    stats.max = Math.max(...values);
+                } else {
+                    const sortedValues = values.sort();
+                    stats.min = sortedValues[0];
+                    stats.max = sortedValues[sortedValues.length - 1];
+                }
+            }
+            
+            return stats;
+        } catch (error) {
+            return {
+                nullCount: 0,
+                distinctCount: 0,
+                min: null,
+                max: null
+            };
+        }
     }
 
     async generateEnhancedParquetMetadata(uint8Array) {
@@ -319,42 +400,92 @@ class ParquetProcessor {
         
         console.log(`Reading Parquet data: ${rows} rows from offset ${offset}`);
         
-        // Try to use real Arrow WASM if available
-        if (this.arrow) {
+        // Try to use real Parquet WASM if available
+        if (this.parquet && this.arrow) {
             try {
                 const uint8Array = new Uint8Array(bytes);
-                const table = this.arrow.tableFromIPC(uint8Array);
                 
-                if (table) {
-                    // Convert Arrow table to JavaScript objects
-                    const totalRows = table.length;
-                    const endIndex = Math.min(offset + rows, totalRows);
-                    const slicedTable = table.slice(offset, endIndex);
+                // Check for Parquet file
+                if (uint8Array.length >= 4) {
+                    const magicBytes = Array.from(uint8Array.slice(0, 4))
+                        .map(b => String.fromCharCode(b))
+                        .join('');
                     
-                    const data = [];
-                    for (let i = 0; i < slicedTable.length; i++) {
-                        const row = {};
-                        slicedTable.schema.fields.forEach((field, fieldIndex) => {
-                            const column = slicedTable.getChildAt(fieldIndex);
-                            row[field.name] = column.get(i);
-                        });
-                        data.push(row);
+                    if (magicBytes === 'PAR1') {
+                        console.log('Reading Parquet data with parquet-wasm');
+                        
+                        // Read Parquet file with parquet-wasm
+                        const parquetFile = this.parquet.readParquet(uint8Array);
+                        const table = this.arrow.tableFromIPC(parquetFile.intoIPCStream());
+                        
+                        // Convert Arrow table to JavaScript objects with pagination
+                        const totalRows = table.length;
+                        const startIndex = offset;
+                        const endIndex = Math.min(offset + rows, totalRows);
+                        const slicedTable = table.slice(startIndex, endIndex);
+                        
+                        const data = [];
+                        for (let i = 0; i < slicedTable.length; i++) {
+                            const row = {};
+                            slicedTable.schema.fields.forEach((field, fieldIndex) => {
+                                const column = slicedTable.getChildAt(fieldIndex);
+                                row[field.name] = column.get(i);
+                            });
+                            data.push(row);
+                        }
+                        
+                        const result = {
+                            rows: data,
+                            schema: this.convertArrowSchema(table.schema),
+                            totalRows: totalRows
+                        };
+                        
+                        if (includeStats) {
+                            result.statistics = await this.computeStatistics(data, columns);
+                        }
+                        
+                        return result;
                     }
-                    
-                    const result = {
-                        rows: data,
-                        schema: this.convertArrowSchema(table.schema),
-                        totalRows: totalRows
-                    };
-                    
-                    if (includeStats) {
-                        result.statistics = await this.computeStatistics(data, columns);
-                    }
-                    
-                    return result;
                 }
+                
+                // Try Arrow IPC format
+                try {
+                    const table = this.arrow.tableFromIPC(uint8Array);
+                    if (table) {
+                        // Convert Arrow table to JavaScript objects
+                        const totalRows = table.length;
+                        const startIndex = offset;
+                        const endIndex = Math.min(offset + rows, totalRows);
+                        const slicedTable = table.slice(startIndex, endIndex);
+                        
+                        const data = [];
+                        for (let i = 0; i < slicedTable.length; i++) {
+                            const row = {};
+                            slicedTable.schema.fields.forEach((field, fieldIndex) => {
+                                const column = slicedTable.getChildAt(fieldIndex);
+                                row[field.name] = column.get(i);
+                            });
+                            data.push(row);
+                        }
+                        
+                        const result = {
+                            rows: data,
+                            schema: this.convertArrowSchema(table.schema),
+                            totalRows: totalRows
+                        };
+                        
+                        if (includeStats) {
+                            result.statistics = await this.computeStatistics(data, columns);
+                        }
+                        
+                        return result;
+                    }
+                } catch (ipcError) {
+                    console.log('Not an Arrow IPC file');
+                }
+                
             } catch (error) {
-                console.warn('Failed to read data with Arrow, using mock data:', error);
+                console.warn('Failed to read data with Parquet WASM, using mock data:', error);
             }
         }
         
