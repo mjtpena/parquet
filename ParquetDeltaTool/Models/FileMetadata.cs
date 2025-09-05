@@ -39,7 +39,7 @@ public class FileMetadata
 public class ParquetFileMetadata : FileMetadata
 {
     public int RowGroups { get; set; }
-    public long RowCount { get; set; }
+    public new long RowCount { get; set; }
     public List<RowGroupMetadata> RowGroupMetadata { get; set; } = new();
     public List<ColumnMetadata> Columns { get; set; } = new();
     public string Version { get; set; } = string.Empty;
