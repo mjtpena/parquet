@@ -1,0 +1,328 @@
+/* 
+   Enhanced Design System & Color Tokens for Parquet Delta Tool
+   Modern, sophisticated color palette with accessibility and hierarchy
+*/
+
+:root {
+    /* ===== BRAND COLOR PALETTE ===== */
+    /* Primary Brand Colors */
+    --color-primary-50: #f0f9ff;
+    --color-primary-100: #e0f2fe;
+    --color-primary-200: #bae6fd;
+    --color-primary-300: #7dd3fc;
+    --color-primary-400: #38bdf8;
+    --color-primary-500: #0ea5e9;
+    --color-primary-600: #0284c7;
+    --color-primary-700: #0369a1;
+    --color-primary-800: #075985;
+    --color-primary-900: #0c4a6e;
+    --color-primary-950: #082f49;
+
+    /* Secondary Colors */
+    --color-secondary-50: #fafaf9;
+    --color-secondary-100: #f5f5f4;
+    --color-secondary-200: #e7e5e4;
+    --color-secondary-300: #d6d3d1;
+    --color-secondary-400: #a8a29e;
+    --color-secondary-500: #78716c;
+    --color-secondary-600: #57534e;
+    --color-secondary-700: #44403c;
+    --color-secondary-800: #292524;
+    --color-secondary-900: #1c1917;
+
+    /* ===== DATA TYPE ACCENT COLORS ===== */
+    /* Parquet Files */
+    --color-parquet-50: #fef7ff;
+    --color-parquet-100: #fceaff;
+    --color-parquet-200: #f8d4fe;
+    --color-parquet-300: #f2b5fc;
+    --color-parquet-400: #e879f9;
+    --color-parquet-500: #d946ef;
+    --color-parquet-600: #c026d3;
+    --color-parquet-700: #a21caf;
+    --color-parquet-800: #86198f;
+    --color-parquet-900: #701a75;
+
+    /* Delta Lake */
+    --color-delta-50: #ecfdf5;
+    --color-delta-100: #d1fae5;
+    --color-delta-200: #a7f3d0;
+    --color-delta-300: #6ee7b7;
+    --color-delta-400: #34d399;
+    --color-delta-500: #10b981;
+    --color-delta-600: #059669;
+    --color-delta-700: #047857;
+    --color-delta-800: #065f46;
+    --color-delta-900: #064e3b;
+
+    /* CSV Files */
+    --color-csv-50: #fffbeb;
+    --color-csv-100: #fef3c7;
+    --color-csv-200: #fde68a;
+    --color-csv-300: #fcd34d;
+    --color-csv-400: #fbbf24;
+    --color-csv-500: #f59e0b;
+    --color-csv-600: #d97706;
+    --color-csv-700: #b45309;
+    --color-csv-800: #92400e;
+    --color-csv-900: #78350f;
+
+    /* JSON Files */
+    --color-json-50: #f0f9ff;
+    --color-json-100: #e0f2fe;
+    --color-json-200: #bae6fd;
+    --color-json-300: #7dd3fc;
+    --color-json-400: #38bdf8;
+    --color-json-500: #0ea5e9;
+    --color-json-600: #0284c7;
+    --color-json-700: #0369a1;
+    --color-json-800: #075985;
+    --color-json-900: #0c4a6e;
+
+    /* ===== STATUS INDICATOR COLORS ===== */
+    /* Success States */
+    --color-success-50: #f0fdf4;
+    --color-success-100: #dcfce7;
+    --color-success-200: #bbf7d0;
+    --color-success-300: #86efac;
+    --color-success-400: #4ade80;
+    --color-success-500: #22c55e;
+    --color-success-600: #16a34a;
+    --color-success-700: #15803d;
+    --color-success-800: #166534;
+    --color-success-900: #14532d;
+
+    /* Warning States */
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-200: #fde68a;
+    --color-warning-300: #fcd34d;
+    --color-warning-400: #fbbf24;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+    --color-warning-800: #92400e;
+    --color-warning-900: #78350f;
+
+    /* Error States */
+    --color-error-50: #fef2f2;
+    --color-error-100: #fee2e2;
+    --color-error-200: #fecaca;
+    --color-error-300: #fca5a5;
+    --color-error-400: #f87171;
+    --color-error-500: #ef4444;
+    --color-error-600: #dc2626;
+    --color-error-700: #b91c1c;
+    --color-error-800: #991b1b;
+    --color-error-900: #7f1d1d;
+
+    /* Info States */
+    --color-info-50: #eff6ff;
+    --color-info-100: #dbeafe;
+    --color-info-200: #bfdbfe;
+    --color-info-300: #93c5fd;
+    --color-info-400: #60a5fa;
+    --color-info-500: #3b82f6;
+    --color-info-600: #2563eb;
+    --color-info-700: #1d4ed8;
+    --color-info-800: #1e40af;
+    --color-info-900: #1e3a8a;
+
+    /* ===== NEUTRAL COLORS ===== */
+    --color-neutral-50: #fafafa;
+    --color-neutral-100: #f5f5f5;
+    --color-neutral-200: #e5e5e5;
+    --color-neutral-300: #d4d4d4;
+    --color-neutral-400: #a3a3a3;
+    --color-neutral-500: #737373;
+    --color-neutral-600: #525252;
+    --color-neutral-700: #404040;
+    --color-neutral-800: #262626;
+    --color-neutral-900: #171717;
+    --color-neutral-950: #0a0a0a;
+
+    /* ===== GRADIENT DEFINITIONS ===== */
+    --gradient-primary: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+    --gradient-secondary: linear-gradient(135deg, var(--color-secondary-400) 0%, var(--color-secondary-600) 100%);
+    --gradient-parquet: linear-gradient(135deg, var(--color-parquet-500) 0%, var(--color-parquet-700) 100%);
+    --gradient-delta: linear-gradient(135deg, var(--color-delta-500) 0%, var(--color-delta-700) 100%);
+    --gradient-hero: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-parquet-600) 50%, var(--color-delta-600) 100%);
+    --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+
+    /* ===== TYPOGRAPHY SCALE ===== */
+    /* Font Families */
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
+    --font-display: 'Inter Display', var(--font-sans);
+
+    /* Font Sizes - Type Scale (1.250 - Major Third) */
+    --text-xs: 0.75rem;      /* 12px */
+    --text-sm: 0.875rem;     /* 14px */
+    --text-base: 1rem;       /* 16px */
+    --text-lg: 1.125rem;     /* 18px */
+    --text-xl: 1.25rem;      /* 20px */
+    --text-2xl: 1.5rem;      /* 24px */
+    --text-3xl: 1.875rem;    /* 30px */
+    --text-4xl: 2.25rem;     /* 36px */
+    --text-5xl: 3rem;        /* 48px */
+    --text-6xl: 3.75rem;     /* 60px */
+    --text-7xl: 4.5rem;      /* 72px */
+    --text-8xl: 6rem;        /* 96px */
+    --text-9xl: 8rem;        /* 128px */
+
+    /* Font Weights */
+    --font-thin: 100;
+    --font-extralight: 200;
+    --font-light: 300;
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+    --font-black: 900;
+
+    /* Line Heights */
+    --leading-none: 1;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 2;
+
+    /* Letter Spacing */
+    --tracking-tighter: -0.05em;
+    --tracking-tight: -0.025em;
+    --tracking-normal: 0em;
+    --tracking-wide: 0.025em;
+    --tracking-wider: 0.05em;
+    --tracking-widest: 0.1em;
+
+    /* ===== SPACING SCALE ===== */
+    --space-px: 1px;
+    --space-0: 0;
+    --space-0_5: 0.125rem;   /* 2px */
+    --space-1: 0.25rem;      /* 4px */
+    --space-1_5: 0.375rem;   /* 6px */
+    --space-2: 0.5rem;       /* 8px */
+    --space-2_5: 0.625rem;   /* 10px */
+    --space-3: 0.75rem;      /* 12px */
+    --space-3_5: 0.875rem;   /* 14px */
+    --space-4: 1rem;         /* 16px */
+    --space-5: 1.25rem;      /* 20px */
+    --space-6: 1.5rem;       /* 24px */
+    --space-7: 1.75rem;      /* 28px */
+    --space-8: 2rem;         /* 32px */
+    --space-9: 2.25rem;      /* 36px */
+    --space-10: 2.5rem;      /* 40px */
+    --space-11: 2.75rem;     /* 44px */
+    --space-12: 3rem;        /* 48px */
+    --space-14: 3.5rem;      /* 56px */
+    --space-16: 4rem;        /* 64px */
+    --space-20: 5rem;        /* 80px */
+    --space-24: 6rem;        /* 96px */
+    --space-28: 7rem;        /* 112px */
+    --space-32: 8rem;        /* 128px */
+
+    /* ===== BORDER RADIUS ===== */
+    --radius-none: 0;
+    --radius-sm: 0.125rem;   /* 2px */
+    --radius: 0.25rem;       /* 4px */
+    --radius-md: 0.375rem;   /* 6px */
+    --radius-lg: 0.5rem;     /* 8px */
+    --radius-xl: 0.75rem;    /* 12px */
+    --radius-2xl: 1rem;      /* 16px */
+    --radius-3xl: 1.5rem;    /* 24px */
+    --radius-full: 9999px;
+
+    /* ===== SHADOWS ===== */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+    /* Colored Shadows */
+    --shadow-primary: 0 10px 15px -3px rgb(14 165 233 / 0.2), 0 4px 6px -4px rgb(14 165 233 / 0.1);
+    --shadow-success: 0 10px 15px -3px rgb(34 197 94 / 0.2), 0 4px 6px -4px rgb(34 197 94 / 0.1);
+    --shadow-warning: 0 10px 15px -3px rgb(245 158 11 / 0.2), 0 4px 6px -4px rgb(245 158 11 / 0.1);
+    --shadow-error: 0 10px 15px -3px rgb(239 68 68 / 0.2), 0 4px 6px -4px rgb(239 68 68 / 0.1);
+
+    /* ===== ANIMATIONS ===== */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slower: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Easing Functions */
+    --ease-linear: cubic-bezier(0, 0, 1, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ===== BREAKPOINTS ===== */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
+
+    /* ===== Z-INDEX SCALE ===== */
+    --z-0: 0;
+    --z-10: 10;
+    --z-20: 20;
+    --z-30: 30;
+    --z-40: 40;
+    --z-50: 50;
+    --z-auto: auto;
+
+    /* ===== COMPONENT SPECIFIC ===== */
+    /* Touch Targets */
+    --touch-target-min: 44px;
+    --touch-target-comfortable: 48px;
+
+    /* Container Max Widths */
+    --container-sm: 640px;
+    --container-md: 768px;
+    --container-lg: 1024px;
+    --container-xl: 1280px;
+    --container-2xl: 1536px;
+
+    /* Data Table Specific */
+    --table-header-bg: var(--color-neutral-50);
+    --table-border: var(--color-neutral-200);
+    --table-hover: var(--color-neutral-50);
+    --table-selected: var(--color-primary-50);
+    --table-font-mono: var(--font-mono);
+}
+
+/* Dark Mode Color Overrides */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark mode adjustments */
+        --table-header-bg: var(--color-neutral-800);
+        --table-border: var(--color-neutral-700);
+        --table-hover: var(--color-neutral-800);
+        --table-selected: var(--color-primary-900);
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    :root {
+        /* Increase contrast for accessibility */
+        --color-primary-500: var(--color-primary-600);
+        --color-neutral-500: var(--color-neutral-600);
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --transition-fast: 0ms;
+        --transition-base: 0ms;
+        --transition-slow: 0ms;
+        --transition-slower: 0ms;
+    }
+}

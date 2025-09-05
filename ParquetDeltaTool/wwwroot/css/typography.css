@@ -1,0 +1,427 @@
+/* 
+   Advanced Typography System for Parquet Delta Tool
+   Professional type hierarchy with accessibility and data-focused design
+*/
+
+/* Base Typography Reset */
+* {
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1, 'pnum' 1, 'tnum' 0, 'onum' 1, 'lnum' 0, 'dlig' 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--font-normal);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-normal);
+    color: var(--color-neutral-900);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== HEADING HIERARCHY ===== */
+.typography-h1,
+h1.mud-typography-h1 {
+    font-family: var(--font-display);
+    font-size: var(--text-5xl);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-6);
+    margin-top: 0;
+    color: var(--color-neutral-900);
+}
+
+.typography-h2,
+h2.mud-typography-h2 {
+    font-family: var(--font-display);
+    font-size: var(--text-4xl);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-5);
+    margin-top: var(--space-8);
+    color: var(--color-neutral-800);
+}
+
+.typography-h3,
+h3.mud-typography-h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-4);
+    margin-top: var(--space-6);
+    color: var(--color-neutral-800);
+}
+
+.typography-h4,
+h4.mud-typography-h4 {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-normal);
+    margin-bottom: var(--space-3);
+    margin-top: var(--space-5);
+    color: var(--color-neutral-700);
+}
+
+.typography-h5,
+h5.mud-typography-h5 {
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-normal);
+    margin-bottom: var(--space-2);
+    margin-top: var(--space-4);
+    color: var(--color-neutral-700);
+}
+
+.typography-h6,
+h6.mud-typography-h6 {
+    font-family: var(--font-sans);
+    font-size: var(--text-lg);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    margin-bottom: var(--space-2);
+    margin-top: var(--space-3);
+    color: var(--color-neutral-600);
+}
+
+/* ===== BODY TEXT STYLES ===== */
+.typography-body-large,
+.mud-typography-body1 {
+    font-family: var(--font-sans);
+    font-size: var(--text-lg);
+    font-weight: var(--font-normal);
+    line-height: var(--leading-relaxed);
+    letter-spacing: var(--tracking-normal);
+    margin-bottom: var(--space-4);
+    color: var(--color-neutral-800);
+}
+
+.typography-body-regular,
+.mud-typography-body2 {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--font-normal);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-normal);
+    margin-bottom: var(--space-3);
+    color: var(--color-neutral-700);
+}
+
+.typography-body-small {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--font-normal);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-normal);
+    margin-bottom: var(--space-2);
+    color: var(--color-neutral-600);
+}
+
+/* ===== SPECIALIZED TEXT STYLES ===== */
+.typography-lead {
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
+    font-weight: var(--font-light);
+    line-height: var(--leading-relaxed);
+    letter-spacing: var(--tracking-normal);
+    margin-bottom: var(--space-6);
+    color: var(--color-neutral-600);
+}
+
+.typography-caption,
+.mud-typography-caption {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-neutral-500);
+}
+
+.typography-overline {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-none);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--color-neutral-500);
+    margin-bottom: var(--space-1);
+}
+
+/* ===== CODE AND DATA TEXT ===== */
+.typography-code-inline,
+code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    font-weight: var(--font-medium);
+    background-color: var(--color-neutral-100);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-sm);
+    padding: var(--space-0_5) var(--space-1);
+    color: var(--color-primary-700);
+    font-feature-settings: 'kern' 0, 'liga' 0, 'calt' 1, 'zero' 1, 'tnum' 1, 'ss01' 1;
+}
+
+.typography-code-block,
+pre {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: var(--font-normal);
+    line-height: var(--leading-normal);
+    background-color: var(--color-neutral-50);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+    overflow-x: auto;
+    color: var(--color-neutral-800);
+    font-feature-settings: 'kern' 0, 'liga' 0, 'calt' 1, 'zero' 1, 'tnum' 1, 'ss01' 1;
+}
+
+.typography-data-number {
+    font-family: var(--font-mono);
+    font-size: inherit;
+    font-weight: var(--font-medium);
+    font-feature-settings: 'kern' 0, 'liga' 0, 'tnum' 1, 'zero' 1;
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-primary-700);
+}
+
+/* ===== DATA TABLE TYPOGRAPHY ===== */
+.data-table {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: var(--leading-tight);
+}
+
+.data-table th {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-neutral-600);
+}
+
+.data-table td {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--font-normal);
+    color: var(--color-neutral-800);
+}
+
+.data-table .numeric-cell {
+    font-family: var(--font-mono);
+    font-feature-settings: 'kern' 0, 'liga' 0, 'tnum' 1, 'zero' 1;
+    text-align: right;
+    color: var(--color-primary-700);
+}
+
+.data-table .date-cell {
+    font-family: var(--font-mono);
+    font-feature-settings: 'kern' 0, 'liga' 0, 'tnum' 1;
+    color: var(--color-neutral-600);
+}
+
+/* ===== UTILITY CLASSES ===== */
+.typography-muted {
+    color: var(--color-neutral-500);
+}
+
+.typography-subtle {
+    color: var(--color-neutral-600);
+}
+
+.typography-emphasis {
+    color: var(--color-neutral-900);
+    font-weight: var(--font-semibold);
+}
+
+.typography-strong {
+    font-weight: var(--font-bold);
+    color: var(--color-neutral-900);
+}
+
+.typography-semibold {
+    font-weight: var(--font-semibold);
+}
+
+.typography-medium {
+    font-weight: var(--font-medium);
+}
+
+.typography-light {
+    font-weight: var(--font-light);
+}
+
+.typography-tight {
+    letter-spacing: var(--tracking-tight);
+}
+
+.typography-wide {
+    letter-spacing: var(--tracking-wide);
+}
+
+.typography-uppercase {
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+}
+
+.typography-tabular-nums {
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== LINK STYLES ===== */
+.typography-link,
+a {
+    color: var(--color-primary-600);
+    text-decoration: none;
+    font-weight: var(--font-medium);
+    transition: color var(--transition-fast);
+}
+
+.typography-link:hover,
+a:hover {
+    color: var(--color-primary-700);
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary-300);
+    text-underline-offset: 0.125em;
+}
+
+.typography-link:focus,
+a:focus {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* ===== LIST STYLES ===== */
+.typography-list ul,
+.typography-list ol {
+    margin: var(--space-4) 0;
+    padding-left: var(--space-6);
+}
+
+.typography-list li {
+    margin-bottom: var(--space-2);
+    line-height: var(--leading-normal);
+}
+
+.typography-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* ===== BRAND-SPECIFIC TYPOGRAPHY ===== */
+.typography-parquet {
+    color: var(--color-parquet-600);
+    font-weight: var(--font-semibold);
+}
+
+.typography-delta {
+    color: var(--color-delta-600);
+    font-weight: var(--font-semibold);
+}
+
+.typography-csv {
+    color: var(--color-csv-600);
+    font-weight: var(--font-semibold);
+}
+
+.typography-json {
+    color: var(--color-json-600);
+    font-weight: var(--font-semibold);
+}
+
+/* ===== RESPONSIVE TYPOGRAPHY ===== */
+@media (max-width: 768px) {
+    .typography-h1,
+    h1.mud-typography-h1 {
+        font-size: var(--text-4xl);
+    }
+    
+    .typography-h2,
+    h2.mud-typography-h2 {
+        font-size: var(--text-3xl);
+    }
+    
+    .typography-h3,
+    h3.mud-typography-h3 {
+        font-size: var(--text-2xl);
+    }
+    
+    .typography-body-large,
+    .mud-typography-body1 {
+        font-size: var(--text-base);
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: var(--text-sm);
+    }
+    
+    .typography-h1,
+    h1.mud-typography-h1 {
+        font-size: var(--text-3xl);
+        margin-bottom: var(--space-4);
+    }
+    
+    .typography-h2,
+    h2.mud-typography-h2 {
+        font-size: var(--text-2xl);
+        margin-bottom: var(--space-3);
+    }
+}
+
+/* ===== DARK MODE ADJUSTMENTS ===== */
+@media (prefers-color-scheme: dark) {
+    body {
+        color: var(--color-neutral-100);
+    }
+    
+    .typography-h1,
+    h1.mud-typography-h1 {
+        color: var(--color-neutral-50);
+    }
+    
+    .typography-h2,
+    h2.mud-typography-h2,
+    .typography-h3,
+    h3.mud-typography-h3 {
+        color: var(--color-neutral-100);
+    }
+    
+    .typography-h4,
+    h4.mud-typography-h4,
+    .typography-h5,
+    h5.mud-typography-h5 {
+        color: var(--color-neutral-200);
+    }
+    
+    .typography-code-inline,
+    code {
+        background-color: var(--color-neutral-800);
+        border-color: var(--color-neutral-700);
+        color: var(--color-primary-300);
+    }
+    
+    .typography-code-block,
+    pre {
+        background-color: var(--color-neutral-900);
+        border-color: var(--color-neutral-700);
+        color: var(--color-neutral-200);
+    }
+}

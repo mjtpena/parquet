@@ -8,55 +8,55 @@
 <MudLayout>
     <MudAppBar Elevation="0" 
                Color="Color.Transparent" 
-               Class="@($"backdrop-blur-sm border-b {(_isDarkMode ? "border-gray-700" : "border-gray-200")}")"
-               Style="background: rgba(var(--mud-palette-surface), 0.8);">
+               Class="app-bar backdrop-blur-sm border-b"
+               Style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
         <MudIconButton Icon="Icons.Material.Filled.Menu" 
                       Color="Color.Inherit" 
                       Edge="Edge.Start" 
                       OnClick="@ToggleDrawer"
-                      Class="hover:bg-opacity-20" />
+                      Class="mobile-nav-toggle touch-target" />
         
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="ml-2">
-            <MudIcon Icon="Icons.Material.Filled.Storage" Color="Color.Primary" Size="Size.Medium" />
-            <MudText Typo="Typo.h6" Class="font-mono font-bold">
-                <span class="text-primary">Parquet</span>
-                <span class="text-secondary mx-1">&</span>
-                <span class="text-info">Delta</span>
-                <span class="text-secondary ml-2 font-normal">Tool</span>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="brand-logo">
+            <MudIcon Icon="Icons.Material.Filled.Storage" Style="color: var(--color-primary-600);" Size="Size.Medium" />
+            <MudText Typo="Typo.h6" Class="typography-h4" Style="margin: 0;">
+                <span class="typography-parquet">Parquet</span>
+                <span class="typography-muted" style="margin: 0 0.25rem;">&</span>
+                <span class="typography-delta">Delta</span>
+                <span class="typography-subtle" style="margin-left: 0.5rem; font-weight: var(--font-normal);">Tool</span>
             </MudText>
         </MudStack>
         
         <MudSpacer />
         
-        <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="1" Class="nav-actions desktop-only">
             <MudTooltip Text="Toggle Theme">
                 <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
                               Color="Color.Inherit" 
                               OnClick="@ToggleTheme"
-                              Class="hover:bg-opacity-20" />
+                              Class="touch-target" />
             </MudTooltip>
             
             <MudTooltip Text="Settings">
                 <MudIconButton Icon="Icons.Material.Filled.Settings" 
                               Color="Color.Inherit"
                               Href="/settings"
-                              Class="hover:bg-opacity-20" />
+                              Class="touch-target" />
             </MudTooltip>
             
             <MudTooltip Text="Documentation">
                 <MudIconButton Icon="Icons.Material.Filled.Help" 
                               Color="Color.Inherit"
                               Href="/about"
-                              Class="hover:bg-opacity-20" />
+                              Class="touch-target" />
             </MudTooltip>
             
             <MudButton StartIcon="Icons.Custom.Brands.GitHub"
                       Variant="Variant.Outlined"
                       Size="Size.Small"
-                      Color="Color.Inherit"
+                      Color="Color.Primary"
                       Href="https://github.com/mjtpena/parquet"
                       Target="_blank"
-                      Class="ml-2">
+                      Class="github-button">
                 GitHub
             </MudButton>
         </MudStack>
@@ -65,15 +65,15 @@
     <MudDrawer @bind-Open="@_drawerOpen" 
                ClipMode="DrawerClipMode.Always" 
                Elevation="0"
-               Class="@($"border-r {(_isDarkMode ? "border-gray-700" : "border-gray-200")}")"
+               Class="navigation-drawer"
                Variant="DrawerVariant.Mini"
                OpenMiniOnHover="true">
         <NavMenu />
     </MudDrawer>
 
-    <MudMainContent Class="@($"{(_isDarkMode ? "dark-theme" : "light-theme")} transition-all duration-300")">
-        <div class="min-h-screen" style="background: linear-gradient(135deg, var(--mud-palette-background) 0%, var(--mud-palette-surface) 100%);">
-            <MudContainer MaxWidth="MaxWidth.False" Class="pa-6">
+    <MudMainContent Class="main-content">
+        <div class="page-wrapper min-h-screen">
+            <MudContainer MaxWidth="MaxWidth.False" Class="main-container">
                 @Body
             </MudContainer>
         </div>

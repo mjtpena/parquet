@@ -1,0 +1,376 @@
+/* 
+   Enhanced Navigation System
+   Improved navigation with better information architecture and accessibility
+*/
+
+/* ===== APP BAR STYLES ===== */
+.app-bar {
+    border-bottom: 1px solid var(--color-neutral-200);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: all var(--transition-fast);
+    height: 64px;
+    z-index: var(--z-40);
+}
+
+.app-bar .brand-logo {
+    margin-left: var(--space-2);
+}
+
+.app-bar .brand-logo .mud-icon {
+    transition: transform var(--transition-fast);
+}
+
+.app-bar .brand-logo:hover .mud-icon {
+    transform: scale(1.1);
+}
+
+.app-bar .nav-actions {
+    gap: var(--space-2);
+}
+
+.app-bar .github-button {
+    margin-left: var(--space-2);
+    border-color: var(--color-primary-300);
+    color: var(--color-primary-700);
+    transition: all var(--transition-fast);
+}
+
+.app-bar .github-button:hover {
+    border-color: var(--color-primary-500);
+    background-color: var(--color-primary-50);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-primary);
+}
+
+/* ===== NAVIGATION DRAWER ===== */
+.navigation-drawer {
+    border-right: 1px solid var(--color-neutral-200);
+    background-color: var(--color-neutral-50);
+    transition: all var(--transition-base);
+}
+
+.navigation-menu {
+    padding: var(--space-4);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== ENHANCED NAVIGATION MENU ===== */
+.nav-menu-enhanced {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-menu-enhanced .mud-nav-link {
+    border-radius: var(--radius-lg) !important;
+    margin: var(--space-1) 0 !important;
+    padding: var(--space-3) var(--space-4) !important;
+    transition: all var(--transition-fast) !important;
+    color: var(--color-neutral-700) !important;
+    font-weight: var(--font-medium) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-menu-enhanced .mud-nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left var(--transition-slow);
+}
+
+.nav-menu-enhanced .mud-nav-link:hover::before {
+    left: 100%;
+}
+
+.nav-menu-enhanced .mud-nav-link:hover {
+    background-color: var(--color-primary-50) !important;
+    transform: translateX(var(--space-1));
+    color: var(--color-primary-700) !important;
+    box-shadow: var(--shadow-sm);
+}
+
+.nav-menu-enhanced .mud-nav-link.active {
+    background: var(--gradient-primary) !important;
+    color: white !important;
+    box-shadow: var(--shadow-primary);
+    transform: translateX(var(--space-1));
+}
+
+.nav-menu-enhanced .mud-nav-link.active::before {
+    display: none;
+}
+
+.nav-menu-enhanced .mud-nav-link .mud-icon {
+    margin-right: var(--space-3) !important;
+    transition: transform var(--transition-fast);
+}
+
+.nav-menu-enhanced .mud-nav-link:hover .mud-icon {
+    transform: scale(1.1);
+}
+
+/* ===== NAVIGATION GROUPS ===== */
+.nav-group-primary .mud-nav-group-header {
+    color: var(--color-primary-600) !important;
+    font-weight: var(--font-semibold) !important;
+    font-size: var(--text-sm) !important;
+    text-transform: uppercase !important;
+    letter-spacing: var(--tracking-wide) !important;
+    padding: var(--space-3) var(--space-4) var(--space-2) !important;
+}
+
+.nav-group-secondary .mud-nav-group-header {
+    color: var(--color-delta-600) !important;
+    font-weight: var(--font-semibold) !important;
+    font-size: var(--text-sm) !important;
+    text-transform: uppercase !important;
+    letter-spacing: var(--tracking-wide) !important;
+    padding: var(--space-3) var(--space-4) var(--space-2) !important;
+}
+
+.nav-group-tools .mud-nav-group-header {
+    color: var(--color-json-600) !important;
+    font-weight: var(--font-semibold) !important;
+    font-size: var(--text-sm) !important;
+    text-transform: uppercase !important;
+    letter-spacing: var(--tracking-wide) !important;
+    padding: var(--space-3) var(--space-4) var(--space-2) !important;
+}
+
+.mud-nav-group {
+    margin-bottom: var(--space-3) !important;
+}
+
+.mud-nav-group .mud-nav-group-header .mud-icon {
+    margin-right: var(--space-2) !important;
+}
+
+/* ===== SPECIAL NAVIGATION ITEMS ===== */
+.nav-item-home {
+    background: var(--gradient-hero) !important;
+    color: white !important;
+    font-weight: var(--font-semibold) !important;
+    margin-bottom: var(--space-4) !important;
+    box-shadow: var(--shadow-primary);
+}
+
+.nav-item-home:hover {
+    transform: translateX(var(--space-1)) scale(1.02);
+    box-shadow: var(--shadow-lg);
+}
+
+.nav-item-secondary {
+    color: var(--color-neutral-500) !important;
+    font-size: var(--text-sm) !important;
+}
+
+.nav-item-secondary:hover {
+    color: var(--color-neutral-700) !important;
+    background-color: var(--color-neutral-100) !important;
+}
+
+/* ===== STATUS CHIPS ===== */
+.status-chip {
+    margin-left: auto !important;
+    font-size: var(--text-xs) !important;
+    padding: var(--space-1) var(--space-2) !important;
+    border-radius: var(--radius-full) !important;
+    font-weight: var(--font-medium) !important;
+    text-transform: uppercase !important;
+    letter-spacing: var(--tracking-wide) !important;
+}
+
+/* ===== DEVELOPER PREVIEW CARD ===== */
+.nav-menu-enhanced .mud-paper {
+    background: var(--gradient-primary) !important;
+    border-radius: var(--radius-xl) !important;
+    margin-top: auto !important;
+    margin-bottom: var(--space-4) !important;
+    padding: var(--space-4) !important;
+    box-shadow: var(--shadow-primary) !important;
+}
+
+/* ===== MINI DRAWER STYLES ===== */
+.mud-drawer-mini .nav-menu-enhanced .mud-text {
+    display: none;
+}
+
+.mud-drawer-mini .nav-menu-enhanced .status-chip {
+    display: none;
+}
+
+.mud-drawer-mini .nav-menu-enhanced .mud-paper {
+    display: none;
+}
+
+.mud-drawer-mini .nav-menu-enhanced .mud-nav-link {
+    justify-content: center !important;
+    padding: var(--space-3) !important;
+}
+
+.mud-drawer-mini .nav-group-primary .mud-nav-group-header,
+.mud-drawer-mini .nav-group-secondary .mud-nav-group-header,
+.mud-drawer-mini .nav-group-tools .mud-nav-group-header {
+    text-align: center !important;
+    padding: var(--space-2) !important;
+}
+
+/* ===== MOBILE NAVIGATION ===== */
+@media (max-width: 768px) {
+    .navigation-drawer {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        z-index: var(--z-50) !important;
+        transform: translateX(-100%);
+        transition: transform var(--transition-base);
+    }
+    
+    .navigation-drawer.open {
+        transform: translateX(0);
+    }
+    
+    .mobile-nav-toggle {
+        display: block !important;
+    }
+    
+    .desktop-only {
+        display: none !important;
+    }
+    
+    .app-bar {
+        padding: 0 var(--space-4) !important;
+    }
+    
+    .nav-menu-enhanced .mud-nav-link {
+        padding: var(--space-4) var(--space-6) !important;
+        font-size: var(--text-base) !important;
+    }
+    
+    .nav-menu-enhanced .mud-nav-link .mud-icon {
+        margin-right: var(--space-4) !important;
+    }
+}
+
+/* ===== TABLET NAVIGATION ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .navigation-drawer {
+        width: 240px !important;
+    }
+    
+    .nav-menu-enhanced .mud-nav-link {
+        font-size: var(--text-sm) !important;
+    }
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+.nav-menu-enhanced .mud-nav-link:focus {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-md);
+}
+
+.nav-menu-enhanced .mud-nav-link[aria-current="page"] {
+    background: var(--gradient-primary) !important;
+    color: white !important;
+    font-weight: var(--font-semibold) !important;
+}
+
+/* Navigation announcements for screen readers */
+.nav-announcement {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* Focus indicators for keyboard navigation */
+.nav-menu-enhanced .mud-nav-group-header:focus {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 1px;
+    border-radius: var(--radius-sm);
+}
+
+/* ===== DARK MODE ADJUSTMENTS ===== */
+@media (prefers-color-scheme: dark) {
+    .app-bar {
+        border-bottom-color: var(--color-neutral-700);
+        background: rgba(30, 41, 59, 0.95) !important;
+    }
+    
+    .navigation-drawer {
+        border-right-color: var(--color-neutral-700);
+        background-color: var(--color-neutral-800);
+    }
+    
+    .nav-menu-enhanced .mud-nav-link {
+        color: var(--color-neutral-200) !important;
+    }
+    
+    .nav-menu-enhanced .mud-nav-link:hover {
+        background-color: var(--color-primary-900) !important;
+        color: var(--color-primary-200) !important;
+    }
+    
+    .nav-item-secondary {
+        color: var(--color-neutral-400) !important;
+    }
+    
+    .nav-item-secondary:hover {
+        color: var(--color-neutral-200) !important;
+        background-color: var(--color-neutral-700) !important;
+    }
+}
+
+/* ===== ANIMATION ENHANCEMENTS ===== */
+@keyframes navigationSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.nav-menu-enhanced .mud-nav-link {
+    animation: navigationSlideIn var(--transition-base) ease-out;
+}
+
+.nav-menu-enhanced .mud-nav-link:nth-child(1) { animation-delay: 0ms; }
+.nav-menu-enhanced .mud-nav-link:nth-child(2) { animation-delay: 50ms; }
+.nav-menu-enhanced .mud-nav-link:nth-child(3) { animation-delay: 100ms; }
+.nav-menu-enhanced .mud-nav-link:nth-child(4) { animation-delay: 150ms; }
+.nav-menu-enhanced .mud-nav-link:nth-child(5) { animation-delay: 200ms; }
+
+/* ===== HIGH CONTRAST MODE ===== */
+@media (prefers-contrast: high) {
+    .nav-menu-enhanced .mud-nav-link {
+        border: 2px solid transparent;
+    }
+    
+    .nav-menu-enhanced .mud-nav-link:hover,
+    .nav-menu-enhanced .mud-nav-link.active {
+        border-color: currentColor;
+    }
+    
+    .app-bar {
+        border-bottom-width: 3px;
+    }
+    
+    .navigation-drawer {
+        border-right-width: 3px;
+    }
+}
